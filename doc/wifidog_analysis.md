@@ -5,17 +5,17 @@
  1. 初始化一个s\_config指针，指向一个static的全局s\_config变量，该全局变量在conf.c中定义。
     通过读取参数，文件等方法初始化配置结构，并验证配置是否有效。初始化完成之后可以通过调用
 
-    ```c
-    s_config *config = config_get_config();
     ```
+    s_config *config = config_get_config();
+
     获取到全局的配置结构的指针。
 
  2. 初始话用户链表，也是一个全局的链表变量，定义在client_list.c中，firstclient作为全局变量指针
     指向该结构的首节点，初始化为NULL。可以通过调用
 
-    ```c
-    t_client * client_get_first_client(void)
     ```
+    t_client * client_get_first_client(void)
+
     函数来获取全局链表指针。
 
 3. 注册信号，信号处理函数

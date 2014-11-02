@@ -54,7 +54,6 @@
    这个接口由thread_ping线程定时发起，主要目的是向服务器提交一些路由器的工作信息。时间间隔是配置项checkinterval。
    格式：
    
-   ```
        "GET %s%sgw_id=%s&sys_uptime=%lu&sys_memfree=%u&sys_load=%.2f&wifidog_uptime=%lu HTTP/1.0\r\n"
           "User-Agent: WiFiDog %s\r\n"
           "Host: %s\r\n"
@@ -68,12 +67,12 @@
           (long unsigned int)((long unsigned int)time(NULL) - (long unsigned int)started_time),
           VERSION,
           auth_server->authserv_hostname
-    ```
+    
     Example：
-    ```
+
     /api/skywifi/ping/?gw_id=1234&sys_uptime=123456&sys_memfree=1234&sys_load=0.5&wifidog_uptime=1234
-    ```
     等待时间，30秒。
+    
     返回 Pong
 
 4. /api/skywifi/login/
