@@ -9,7 +9,7 @@
 
 增加一项OAuthServer。配置方法如下：
 
-```
+```c
 OAuthServer {
     Hostname auth.ilesansfil.org
 }
@@ -17,7 +17,7 @@ OAuthServer {
 OAuthServer {
     Hostname auth2.ilesansfil.org
 }
-
+```
 可以配置多项。
 
 考虑到OAuthServer并不与gateWay之间有直接的交互关系。所以即使OAuth认证需要https完成，我们这里也不用设置专门的配置项
