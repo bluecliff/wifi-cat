@@ -1,6 +1,5 @@
-# 项目结构 #
-10/31/2014 10:07:25 AM 
-> 
+## 项目结构
+
 	/src/main/java:  （放置java代码的目录）
 		- com.yiroy.www.auth 放置功能模块代码
 		- com.yiroy.www.basic 已经封装的action,dao,service公用方法，所有的action，service,dao都需要继承此包
