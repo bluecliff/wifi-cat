@@ -9,9 +9,14 @@
 
 ## 数据库文档
 * [**数据库表说明文档**](db/doc/数据表说明文档.markdown)
+* [**数据库建表语句**](db/yiroy.sql)
 
 ## 云端程序文档
 * [**yiroy-app目录结构**](java-api/目录结构文档/yiroy-app目录结构.md)
 
 ## 文件
 * [**商用wifi项目白皮书**](operation/商用wifi项目白皮书.docx)
+
+## 目标
+* [**第一个版本实现功能列表**](goals/1.0_server.md)
+* [**ap启动时需要从数据库读取的配置项列表**](goals/config-list.md)
