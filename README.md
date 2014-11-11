@@ -5,15 +5,9 @@
 * [**易昌安**](log/yichangan.md)
 * [**李双江**](log/lishuangjiang.md)
 
-### 通用文档
-* [**用户认证流程**](doc/common/user_connect_procedure.md)
-* [**wifidog代码分析**](doc/common/wifidog_analysis.md)
-* [**wifidog修改方案**](doc/common/wifidog_change_plan.md)
-* [**认证服务器API**](doc/common/authserver_API.md)
-
 ### 认证网关文档
 * [**网关配置文件**](doc/gateway/gateway_config.md)
-* [**网关认证过程**](doc/gatewat/gateway_auth.md)
+* [**网关认证过程**](doc/gateway/gateway_auth.md)
 
 ### 数据库文档
 * [**数据库表说明文档**](doc/db/数据表说明文档.markdown)
