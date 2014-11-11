@@ -13,6 +13,7 @@ gateway的配置文件包括两份，一是本地配置文件，二是云端配�
 
 ### 云端配置项
 
+```
 {
     "maxclients": 20,		/**< @brief Maximum number of clients allowed */
 	"gw_name": "nodog",		/**< @brief Name of the gateway; e.g. its SSID */
@@ -30,4 +31,4 @@ gateway的配置文件包括两份，一是本地配置文件，二是云端配�
 	"trustedmaclist":["0023547041AD","010304AADD"]; 	/**< @brief list of trusted macs */
 	"trustediplist":["222.222.323.23"];     /**< @brief list of trusted servers' ip */
 }
-
+```
