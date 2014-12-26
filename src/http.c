@@ -384,11 +384,9 @@ http_nodogsplash_callback_auth(httpd *webserver, request *r)
 		free(data);
 		http_nodogsplash_callback_action(r,authtarget,AUTH_MAKE_AUTHENTICATED);
 		client->added_time = time(NULL) - (config->checkinterval * config->clientforceout) + seconds;
-	}
-	else if(http_nodogsplash_check_userpass(r,authtarget)) {
+	} else if(http_nodogsplash_check_userpass(r,authtarget)) {
 		http_nodogsplash_callback_action (r,authtarget,AUTH_MAKE_AUTHENTICATED);
-	} 
-	else {
+	} else {
 		/* Password check failed; just serve them the splash page again */
 serve_splash:
 		if (data) {

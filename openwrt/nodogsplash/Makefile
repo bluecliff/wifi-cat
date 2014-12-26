@@ -18,6 +18,10 @@ PKG_SOURCE_URL:=git://github.com/nodogsplash/nodogsplash.git
 PKG_SOURCE_VERSION:=master
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 PKG_BUILD_PARALLEL:=1
+<<<<<<< HEAD
+=======
+PKG_LICENSE:=GPL-2.0+
+>>>>>>> nodog/master
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -56,4 +60,7 @@ define Package/nodogsplash/conffiles
 endef
 
 $(eval $(call BuildPackage,nodogsplash))
+<<<<<<< HEAD
 
+=======
+>>>>>>> nodog/master
