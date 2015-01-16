@@ -1,6 +1,5 @@
 {
     "AuthPath":"/wificat/auth/",
-    "ConfigPath":"/wificat/config/",
     "NetTrafficPath":"/wificat/nettraffic/",
     "FreeIPList":["223.223.224.2","112.112.112.112"],
     "GatewayName":"mayafangwu",

@@ -8,39 +8,40 @@ LDLIBS=
 
 NDS_OBJS=src/auth.o src/client_list.o src/commandline.o src/conf.o \
 	src/debug.o src/firewall.o src/fw_iptables.o src/gateway.o src/http.o \
-	src/httpd_handler.o src/ndsctl_thread.o src/safe.o src/tc.o src/util.o
+	src/httpd_handler.o src/ndsctl_thread.o src/safe.o src/tc.o src/util.o \
+	src/centerserver.o src/jsmn.o
 
 LIBHTTPD_OBJS=libhttpd/api.o libhttpd/ip_acl.o \
 	libhttpd/protocol.o libhttpd/version.o
 
 .PHONY: all clean install checkastyle fixstyle
 
-all: nodogsplash ndsctl
+all: wificat ndsctl
 
 %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-nodogsplash: $(NDS_OBJS) $(LIBHTTPD_OBJS)
-	$(CC) $(LDFLAGS) -o nodogsplash $+ $(LDLIBS)
+wificat: $(NDS_OBJS) $(LIBHTTPD_OBJS)
+	$(CC) $(LDFLAGS) -o wificat $+ $(LDLIBS)
 
 ndsctl: src/ndsctl.o
 	$(CC) $(LDFLAGS) -o ndsctl $+ $(LDLIBS)
 
 clean:
-	rm -f nodogsplash ndsctl src/*.o libhttpd/*.o
+	rm -f wificat ndsctl src/*.o libhttpd/*.o
 	rm -rf dist
 
 install:
-	strip nodogsplash
+	strip wificat
 	strip ndsctl
 	mkdir -p $(DESTDIR)/usr/bin/
 	cp ndsctl $(DESTDIR)/usr/bin/
-	cp nodogsplash $(DESTDIR)/usr/bin/
-	mkdir -p $(DESTDIR)/etc/nodogsplash/htdocs/images
-	cp resources/nodogsplash.conf $(DESTDIR)/etc/nodogsplash/
-	cp resources/splash.html $(DESTDIR)/etc/nodogsplash/htdocs/
-	cp resources/infoskel.html $(DESTDIR)/etc/nodogsplash/htdocs/
-	cp resources/splash.jpg $(DESTDIR)/etc/nodogsplash/htdocs/images/
+	cp wificat $(DESTDIR)/usr/bin/
+	mkdir -p $(DESTDIR)/etc/wificat/htdocs/images
+	cp resources/wificat.conf $(DESTDIR)/etc/wificat/
+	cp resources/wificat.html $(DESTDIR)/etc/wificat/htdocs/
+	cp resources/infoskel.html $(DESTDIR)/etc/wificat/htdocs/
+	cp resources/wificat.jpg $(DESTDIR)/etc/wificat/htdocs/images/
 
 checkastyle:
 	@command -v astyle >/dev/null 2>&1 || \
@@ -54,12 +55,12 @@ fixstyle: checkastyle
 	|| echo "\033[0;32mAll files are ok\033[00m"
 
 deb:
-	mkdir -p dist/nodogsplash/
-	cd dist/nodogsplash/; \
+	mkdir -p dist/wificat/
+	cd dist/wificat/; \
 		cp -rp ../../debian/ .; \
 		ln -s ../../Makefile;\
 		ln -s ../../src;\
 		ln -s ../../libhttpd;\
 		ln -s ../../resources;\
 		dpkg-buildpackage -b -us -uc
-	rm -rf dist/nodogsplash
+	rm -rf dist/wificat
