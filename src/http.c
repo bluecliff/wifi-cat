@@ -142,7 +142,6 @@ http_nodogsplash_callback_404(httpd *webserver, request *r)
 {
 	debug(LOG_INFO, "Capturing as 404 request from %s for [%s%s]",
 		  r->clientAddr, r->request.host, r->request.path);
-
 	http_nodogsplash_first_contact(r);
 }
 
@@ -353,53 +352,12 @@ http_nodogsplash_callback_auth(httpd *webserver, request *r)
 
 	client = http_nodogsplash_add_client(r);
 	/* http_nodogsplash_add_client() should log and return null on error */
-	if(!client) return;
-
+	if(!client) 
+	    return;
 	/* Get info we need from request, and do action */
-	authtarget = http_nodogsplash_decode_authtarget(r);
-	config = config_get_config();
-
-	if (config->bin_voucher && ((authtarget->voucher) || (config->force_voucher))) {
-
-		if (!client)
-			goto serve_splash;
-
-		if (!authtarget->voucher || !http_isAlphaNum(authtarget->voucher))
-			goto serve_splash;
-
-		snprintf(cmd_buff, sizeof(cmd_buff) - 1, "%s auth_voucher %s %s",
-				 config->bin_voucher, client->mac, authtarget->voucher);
-		data = system_exec(cmd_buff);
-
-		if (!data)
-			goto serve_splash;
-
-		seconds = data_extract_bw(data, client);
-		if(seconds < 1)
-			goto serve_splash;
-
-		debug(LOG_NOTICE, "Remote voucher: client [%s, %s] authenticated %d seconds",
-			  client->mac, client->ip, seconds);
-
-		free(data);
-		http_nodogsplash_callback_action(r,authtarget,AUTH_MAKE_AUTHENTICATED);
-		client->added_time = time(NULL) - (config->checkinterval * config->clientforceout) + seconds;
-	}
-	else if(http_nodogsplash_check_userpass(r,authtarget)) {
-		http_nodogsplash_callback_action (r,authtarget,AUTH_MAKE_AUTHENTICATED);
-	} 
-	else {
-		/* Password check failed; just serve them the splash page again */
-serve_splash:
-		if (data) {
-			msg = strchr(data, ' ');
-			if (msg)
-				msg++;
-		}
-		http_nodogsplash_serve_splash(r,authtarget,client,msg);
-		free(data);
-	}
-
+	authtarget = http_nodogsplash_decode_authtarget(r);    
+    //认证
+    http_nodogsplash_callback_action (r,authtarget,AUTH_MAKE_AUTHENTICATED);
 	http_nodogsplash_free_authtarget(authtarget);
 }
 
@@ -438,22 +396,21 @@ http_nodogsplash_redirect_remote_auth(request *r, t_auth_target *authtarget)
 	char *remoteurl;
 	char *encgateway, *encauthaction, *encredir, *enctoken;
 	s_config	*config;
-
 	config = config_get_config();
-
 	/* URL encode variables, redirect to remote auth server */
-	encgateway = httpdUrlEncode(config->gw_name);
+	//encgateway = httpdUrlEncode(config->gw_name);
+	
 	encauthaction = httpdUrlEncode(authtarget->authaction);
 	encredir = httpdUrlEncode(authtarget->redir);
 	enctoken = httpdUrlEncode(authtarget->token);
-	safe_asprintf(&remoteurl, "%s?gateway=%s&authaction=%s&redir=%s&tok=%s",
-				  config->remote_auth_action,
-				  encgateway,
+	safe_asprintf(&remoteurl, "%s:%d?id=%d&authaction=%s&redir=%s&tok=%s",
+				  config->auth_server,
+				  config->auth_port,
+				  config->uid,
 				  encauthaction,
 				  encredir,
 				  enctoken);
 	http_nodogsplash_redirect(r, remoteurl);
-	free(encgateway);
 	free(encauthaction);
 	free(encredir);
 	free(enctoken);

@@ -326,6 +326,10 @@ iptables_fw_init(void)
 	t_MAC *pa;
 	int rc = 0, mmask = 0, macmechanism;
 
+    //damon add 14/12/12
+    t_IP *pfree;
+    //damon end
+
 	LOCK_CONFIG();
 	config = config_get_config();
 	gw_interface = safe_strdup(config->gw_interface); /* must free */
@@ -335,6 +339,7 @@ iptables_fw_init(void)
 	pt = config->trustedmaclist;
 	pb = config->blockedmaclist;
 	pa = config->allowedmaclist;
+	pfree = config->free_ip_list;
 	macmechanism = config->macmechanism;
 	set_mss = config->set_mss;
 	mss_value = config->mss_value;

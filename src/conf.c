@@ -46,6 +46,7 @@
 
 #include "util.h"
 
+#include "centerserver.h"
 
 /** @internal
  * Holds the current configuration of the gateway */
@@ -111,7 +112,16 @@ typedef enum {
 	oAllowedMACList,
 	oFWMarkAuthenticated,
 	oFWMarkTrusted,
-	oFWMarkBlocked
+	oFWMarkBlocked,
+	//damon add on 14/12/11/
+	oAuthServer,
+	oAuthPort,
+	oAuthPath,
+	oConfigPath,
+	oNetTrafficPath,
+	oFreeIPList,
+	oUID
+	//damon end
 } OpCodes;
 
 /** @internal
@@ -168,6 +178,15 @@ static const struct {
 	{ "FW_MARK_AUTHENTICATED", oFWMarkAuthenticated },
 	{ "FW_MARK_TRUSTED", oFWMarkTrusted },
 	{ "FW_MARK_BLOCKED", oFWMarkBlocked },
+	//damon add on 14/12/11
+	{ "auth_server", oAuthServer},
+	{ "auth_port", oAuthPort},
+	{ "auth_path", oAuthPath},
+	{ "config_path", oConfigPath},
+	{ "net_traffic_path", oNetTrafficPath},
+	{ "free_ip_list",oFreeIPList},
+	{ "uid",oUID},
+	//damon end
 	{ NULL, oBadOption },
 };
 
@@ -209,7 +228,7 @@ config_init(void)
 	config.gw_iprange = DEFAULT_GATEWAY_IPRANGE;
 	config.gw_address = NULL;
 	config.gw_port = DEFAULT_GATEWAYPORT;
-	config.remote_auth_action = NULL;
+	config.remote_auth_action = DEFAULT_REMOTE_AUTH_ACTION;
 	config.webroot = DEFAULT_WEBROOT;
 	config.splashpage = DEFAULT_SPLASHPAGE;
 	config.infoskelpage = DEFAULT_INFOSKELPAGE;
@@ -247,6 +266,16 @@ config_init(void)
 	config.FW_MARK_AUTHENTICATED = DEFAULT_FW_MARK_AUTHENTICATED;
 	config.FW_MARK_TRUSTED = DEFAULT_FW_MARK_TRUSTED;
 	config.FW_MARK_BLOCKED = DEFAULT_FW_MARK_BLOCKED;
+	
+	//damon add on 14/12/11
+	config.auth_server = DEFAULT_AUTH_SERVER;
+	config.auth_port = DEFAULT_AUTH_PORT;
+	config.auth_path = DEFAULT_AUTH_PATH;
+	config.config_path = DEFAUTL_CONFIG_PATH;
+	config.net_traffic_path = DEFAULT_NET_TRAFFIC_PATH;
+	config.uid=0;
+	config.free_ip_list=NULL;
+	//damon end
 
 	/* Set up default FirewallRuleSets, and their empty ruleset policies */
 	rs = add_ruleset("trusted-users");
@@ -660,6 +689,238 @@ _strip_whitespace(char* p1)
 	return p1;
 }
 
+
+
+//damon add on 14/12/11
+
+void free_ip_init()
+{
+    //add free ip list to preauthenticated-users rule set
+    t_firewall_ruleset *ruleset=get_ruleset("preauthenticated-users");
+    
+    if(ruleset == NULL) {
+        debug(LOG_ERR, "Unrecognized FirewallRuleSet name: %s", rulesetname);
+        debug(LOG_ERR, "Exiting...");
+        exit(-1);
+    }
+    char ip[16];
+    if(resolve_host(config.auth_server)<0)
+    {
+        debug(LOG_ERR,"resolve host [%s] failed",config.auth_server);
+        exit(1);
+    }
+    t_firewall_rule *tmp;
+    tmp=safe_malloc(sizeof(t_firewall_rule));
+    memset((void*)tmp,0,sizeof(t_firewall_rule));
+    tmp->target=TARGET_ACCEPT;
+    tmp->protocol=safe_strdup("tcp");
+    tmp->port=safe_strdup("88");
+    tmp->mask=safe_strdup(ip);
+    if(ruleset->rules==NULL)
+    {
+        ruleset->rules=tmp;
+    }
+    else
+    {
+        tmp->next=ruleset->rules;
+        ruleset->rules=tmp;
+    }
+    t_IP* ip=free_ip_list;
+    for(;ip;ip=ip->next)
+    {
+        tmp=safe_malloc(sizeof(t_firewall_rule));
+        memset((void*)tmp,0,sizeof(t_firewall_rule));
+        tmp->target=TARGET_ACCEPT;
+        tmp->protocol=safe_strdup("tcp");
+        tmp->port=safe_strdup("80");
+        tmp->mask=safe_strdup(ip);
+        tmp->next=ruleset->rules;
+        ruleset->rules=tmp;
+    }
+}
+
+static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
+        if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start &&
+                        strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
+                return 0;
+        }
+        return -1;
+}
+
+void config_from_server()
+{
+    char buf[MAX_BUF],
+    char ip[16];
+    int res=resolve_host(config.auth_server,ip);
+    if(res<0){
+        debug(Log_INFO,"Resolve auth server[%s] error.",config.authserver);
+        exit(1);
+    }
+    ip[15]=0;
+    int res = config_request(ip,config.auth_port,config.config_path,config.uid,VERSION,buf);
+    if(res<0){
+        debug(Log_INFO,"Read config from auth server[%s] error.",config.authserver);
+        return;
+    }
+    
+    int i;
+    char* json=buf;
+    jsmn_parser p;
+    jsmntok_t t[128]; /* We expect no more than 128 tokens */
+    jsmn_init(&p);
+    res = jsmn_parse(&p, json, strlen(json), t, sizeof(t)/sizeof(t[0]));
+    if (res < 0) {
+        debug(LOG_INFO,"Failed to parse JSON: %d", res);
+        return;
+    }
+    /* Assume the top-level element is an object */
+    if (res < 1 || t[0].type != JSMN_OBJECT) {
+        debug(LOG_INFO,"Json Object expected\n");
+        return;
+    }
+     /* Loop over all keys of the root object */
+    int len=0;
+    char tmp[32];
+    for (i = 1; i < res; i++) {
+        if(jsoneq(json,&t[i],"AuthPath")==0){
+            free(config.auth_path);
+            len=t[i+1].end-t[i+1].start;
+            config.auth_path=(char*)safe_malloc(len+1);
+            strncpy(config.auth_path,json+t[i+1].start,len);
+            config.auth_path[len]=0;
+            ++i;
+        }
+        else if(jsoneq(json,&t[i],"ConfigPath")==0){
+            free(config.config_path);
+            len=t[i+1].end-t[i+1].start;
+            config.config_path=(char*)safe_malloc(len+1);
+            strncpy(config.config_path,json+t[i+1].start,len);
+            config.config_path[len]=0;
+            ++i;
+        }
+        else if(jsoneq(json,&t[i],"NetTrafficPath")==0)
+        {
+            free(config.net_traffic_path);
+            len=t[i+1].end-t[i+1].start;
+            config.net_traffic_path=(char*)safe_malloc(len+1);
+            strncpy(config.net_traffic_path,json+t[i+1].start,len);
+            config.net_traffic_path[len]=0;
+            ++i;
+        }
+        else if(jsoneq(json,&t[i],"GatewayName")==0)
+        {
+            free(config.gw_name);
+            len=t[i+1].end-t[i+1].start;
+            config.gw_name=(char*)safe_malloc(len+1);
+            strncpy(config.gw_name,json+t[i+1].start,len);
+            config.gw_name[len]=0;
+            ++i;
+        }
+        else if(jsoneq(json,&t[i],"RedirectURL")==0)
+        {
+            free(config.redirectURL);
+            len=t[i+1].end-t[i+1].start;
+            config.redirectURL=(char*)safe_malloc(len+1);
+            strncpy(config.redirectURL,json+t[i+1].start,len);
+            config.redirectURL[len]=0;
+            ++i;
+        }
+        else if(jsoneq(json,&t[i],"MaxClients")==0)
+        {
+            len=t[i+1].end-t[i+1].start;
+            strncpy(tmp,json+t[i+1].start,len);
+            config.maxclients=atoi(tmp);
+            ++i;
+        }
+        else if(jsoneq(json,&t[i],"ClientIdleTimeout")==0)
+        {
+            len=t[i+1].end-t[i+1].start;
+            strncpy(tmp,json+t[i+1].start,len);
+            config.clienttimeout=atoi(tmp);
+            ++i;
+        }
+        else if(jsoneq(json,&t[i],"ClientForceTimeout")==0)
+        {
+            len=t[i+1].end-t[i+1].start;
+            strncpy(tmp,json+t[i+1].start,len);
+            config.clientforceout=atoi(tmp);
+            ++i;
+        }
+        else if(jsoneq(json,&t[i],"TrafficControl")==0)
+        {
+            len=t[i+1].end-t[i+1].start;
+            strncpy(tmp,json+t[i+1].start,len);
+            config.traffic_control=atoi(tmp);
+            ++i;
+        }
+        else if(jsoneq(json,&t[i],"DonwloadLimit")==0)
+        {
+            len=t[i+1].end-t[i+1].start;
+            strncpy(tmp,json+t[i+1].start,len);
+            config.download_limit=atoi(tmp);
+            ++i;
+        }
+        else if(jsoneq(json,&t[i],"UploadLimit")==0)
+        {
+            len=t[i+1].end-t[i+1].start;
+            strncpy(tmp,json+t[i+1].start,len);
+            config.upload_limit=atoi(tmp);
+            ++i;
+        }
+        else if(jsoneq(json,&t[i],"FreeIPList"))
+        {
+            int j;
+            if (t[i+1].type != JSMN_ARRAY) {
+                debug(LOG_INFO,"expect FreeIPList to be an array of strings");
+                exit(1); /* We expect groups to be an array of strings */
+            }
+            for (j = 0; j < t[i+1].size; j++) {
+                jsmntok_t *g = &t[i+j+2];
+                len=g.end-g.start;
+                strncpy(tmp,json+g.start,len);
+                add_to_free_ip_list(tmp);
+            }
+            i += t[i+1].size +1;  
+        }
+        else if(jsoneq(json,&t[i],"BlockedMACList"))
+        {
+            int j;
+            if (t[i+1].type != JSMN_ARRAY) {
+                debug(LOG_INFO,"expect BlockMACList to be an array of strings");
+                exit(1); /* We expect groups to be an array of strings */
+            }
+            for (j = 0; j < t[i+1].size; j++) {
+                jsmntok_t *g = &t[i+j+2];
+                len=g.end-g.start;
+                strncpy(tmp,json+g.start,len);
+                add_to_blocked_mac_list(tmp);
+            }
+            i += t[i+1].size +1;  
+        }
+        else if(jsoneq(json,&t[i],"TrustedMACList"))
+        {
+            int j;
+            if (t[i+1].type != JSMN_ARRAY) {
+                debug(LOG_INFO,"expect FreeIPList to be an array of strings");
+                exit(1); /* We expect groups to be an array of strings */
+            }
+            for (j = 0; j < t[i+1].size; j++) {
+                jsmntok_t *g = &t[i+j+2];
+                len=g.end-g.start;
+                strncpy(tmp,json+g.start,len);
+                add_to_trusted_mac_list(tmp);
+            }
+            i += t[i+1].size +1;  
+        }
+        else
+        {
+            debug(LOG_INFO,"Unexped key in config from server");
+            return;
+        }
+    }
+}
+//damon end
+
 /**
 @param filename Full path of the configuration file to be read
 */
@@ -943,6 +1204,34 @@ config_read(const char *filename)
 				exit(-1);
 			}
 			break;
+		//damon add on 14/12/11
+		case oAuthServer:
+		    config.auth_server=safe_strdup(p1);
+		    break;
+		case oAuthPort:
+		    if(sscanf(p1,"%d",&config.auth_port)<1 ){
+		        debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(-1);
+		    }
+		    break;
+		case oAuthPath:
+		    config.auth_path = safe_strdup(p1);
+			break;
+		case oConfigPath:
+		    config.config_path=safe_strdup(p1);
+		    break;
+		case oNetTrafficPath:
+		    config.net_traffic_path=safe_strdup(p1);
+		    break;
+		case oUID:
+		    if(sscanf(p1, "%d", &config.uid) < 1) {
+				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
+				debug(LOG_ERR, "Exiting...");
+				exit(-1);
+			}
+			break;
+		//damon end
 		case oBadOption:
 			debug(LOG_ERR, "Bad option %s on line %d in %s", s, linenum, filename);
 			debug(LOG_ERR, "Exiting...");
@@ -987,6 +1276,35 @@ int check_ip_format(const char *possibleip)
 			&& a1 < 256 && a2 < 256 && a3 < 256 && a4 < 256);
 }
 
+
+//damon add 14/12/11
+int add_to_free_ip_list(char *possibleip)
+{
+	char *ip=NULL;
+	t_IP *p=NULL;
+	if(!check_ip_format(possibleip)){
+		debug(LOG_NOTICE,"[%s] not a valid IP address",possibleip);
+		return -1;
+	}
+	ip=safe_malloc(16);
+	strncpy(ip,possibleip,15);
+	for(p=config.free_ip_list;p!=NULL,p=p->next){
+		if(!strcmp(p->ip,ip))
+		{
+			debug(LOG_INFO,"ip address [%s] already on free ip list",ip);
+			free(ip);
+			return 1;
+		}
+	}
+	p = safe_malloc(sizeof(t_IP));
+        p->ip = safe_strdup(ip);
+        p->next = config.free_ip_list;
+        config.free_ip_list = p;
+        debug(LOG_INFO, "Added ip address [%s] to free ip list", ip);
+        free(ip);
+        return 0;
+}
+//damon end
 
 /* Parse a string to see if it is valid MAC address format */
 int check_mac_format(char *possiblemac)
@@ -1380,7 +1698,7 @@ void
 config_validate(void)
 {
 	config_notnull(config.gw_interface, "GatewayInterface");
-
+    config_notnull(config.authserver, "auth_server");
 	if (missing_parms) {
 		debug(LOG_ERR, "Configuration is not complete, exiting...");
 		exit(-1);

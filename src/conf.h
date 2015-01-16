@@ -28,7 +28,7 @@
 #ifndef _CONF_H_
 #define _CONF_H_
 
-#define VERSION "0.9_beta9.9.9"
+#define VERSION "0.1"
 
 /*@{*/
 /** Defines */
@@ -91,6 +91,17 @@
 #define DEFAULT_EMPTY_USERS_TO_ROUTER_POLICY "REJECT"
 #define DEFAULT_EMPTY_AUTHENTICATED_USERS_POLICY "RETURN"
 #define DEFAULT_EMPTY_PREAUTHENTICATED_USERS_POLICY "REJECT"
+
+//damon add on 14/12/11
+#define DEFAULT_REMOTE_AUTH_ACTION "yes"
+#define DEFAULT_AUTH_SERVER "yiroy.com"
+#define DEFAULT_AUTH_PORT 88
+#define DEFAULT_AUTH_PATH "/wificat/auth/"
+#define DEFAULT_CONFIG_PATH "/wificat/config/"
+#define DEFAULT_NETTRAFFIC_PATH "/wificat/nettraffic/"
+
+//damon end
+
 /*@}*/
 
 /**
@@ -133,7 +144,13 @@ typedef struct _MAC_t {
 	struct _MAC_t *next;
 } t_MAC;
 
-
+//damon add on 14/12/11
+//ip list node
+typedef struct _IP_t {
+    char *ip;
+    struct _IP_t *next;
+} t_IP;
+//damon end
 /**
  * Configuration structure
  */
@@ -192,6 +209,16 @@ typedef struct {
 	unsigned int  FW_MARK_AUTHENTICATED;    /**< @brief iptables mark for authenticated packets */
 	unsigned int  FW_MARK_BLOCKED;          /**< @brief iptables mark for blocked packets */
 	unsigned int  FW_MARK_TRUSTED;          /**< @brief iptables mark for trusted packets */
+    
+    //damon add on 14/12/11
+    char *auth_server;
+    int auth_port;
+    char *auth_path;
+    char *config_path;
+    char *net_traffic_path;
+    t_IP *free_ip_list;
+    char *uid;
+    //damon end
 } s_config;
 
 /** @brief Get the current gateway configuration */
@@ -208,6 +235,12 @@ void config_read(const char *filename);
 
 /** @brief Check that the configuration is valid */
 void config_validate(void);
+
+//damon add 2014/12/11
+//get config from server
+void config_from_server();
+void free_ip_init();
+//end
 
 /** @brief Fetch a firewall rule list, given name of the ruleset. */
 t_firewall_rule *get_ruleset_list(const char *);
@@ -234,6 +267,8 @@ int check_mac_format(char *);
 int set_log_level(int);
 int set_password(char *);
 int set_username(char *);
+
+
 
 #define LOCK_CONFIG() do { \
 	debug(LOG_DEBUG, "Locking config"); \

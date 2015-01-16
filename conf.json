@@ -1,0 +1,16 @@
+{
+    "AuthPath":"/wificat/auth/",
+    "ConfigPath":"/wificat/config/",
+    "NetTrafficPath":"/wificat/nettraffic/",
+    "FreeIPList":["223.223.224.2","112.112.112.112"],
+    "GatewayName":"mayafangwu",
+    "RedirectURL":"ad.com",
+    "MaxClients":20,
+    "ClientIdleTimeout":10,
+    "ClientForceTimeout":300,
+    "BlockedMACList":["22:12:12:21:12:23"],
+    "TrustedMACList":[""],
+    "TrafficControl":1,
+    "DonwnloadLimit":0,
+    "UploadLimit":0
+}
