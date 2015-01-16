@@ -94,11 +94,11 @@
 
 //damon add on 14/12/11
 #define DEFAULT_REMOTE_AUTH_ACTION "yes"
-#define DEFAULT_AUTH_SERVER "yiroy.com"
-#define DEFAULT_AUTH_PORT 88
+#define DEFAULT_AUTH_SERVER "manage.yiroy.com"
+#define DEFAULT_AUTH_PORT 80
 #define DEFAULT_AUTH_PATH "/wificat/auth/"
 #define DEFAULT_CONFIG_PATH "/wificat/config/"
-#define DEFAULT_NETTRAFFIC_PATH "/wificat/nettraffic/"
+#define DEFAULT_NET_TRAFFIC_PATH "/wificat/nettraffic/"
 
 //damon end
 
@@ -217,7 +217,7 @@ typedef struct {
     char *config_path;
     char *net_traffic_path;
     t_IP *free_ip_list;
-    char *uid;
+    int uid;
     //damon end
 } s_config;
 

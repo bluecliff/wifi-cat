@@ -48,6 +48,8 @@
 
 #include "centerserver.h"
 
+#include "jsmn.h"
+
 /** @internal
  * Holds the current configuration of the gateway */
 static s_config config;
@@ -271,7 +273,7 @@ config_init(void)
 	config.auth_server = DEFAULT_AUTH_SERVER;
 	config.auth_port = DEFAULT_AUTH_PORT;
 	config.auth_path = DEFAULT_AUTH_PATH;
-	config.config_path = DEFAUTL_CONFIG_PATH;
+	config.config_path = DEFAULT_CONFIG_PATH;
 	config.net_traffic_path = DEFAULT_NET_TRAFFIC_PATH;
 	config.uid=0;
 	config.free_ip_list=NULL;
@@ -699,12 +701,12 @@ void free_ip_init()
     t_firewall_ruleset *ruleset=get_ruleset("preauthenticated-users");
     
     if(ruleset == NULL) {
-        debug(LOG_ERR, "Unrecognized FirewallRuleSet name: %s", rulesetname);
+        debug(LOG_ERR, "Unrecognized FirewallRuleSet name: preauthenticated-users");
         debug(LOG_ERR, "Exiting...");
         exit(-1);
     }
-    char ip[16];
-    if(resolve_host(config.auth_server)<0)
+    char auth_server_ip[16];
+    if(resolve_host(config.auth_server,auth_server_ip)<0)
     {
         debug(LOG_ERR,"resolve host [%s] failed",config.auth_server);
         exit(1);
@@ -714,8 +716,8 @@ void free_ip_init()
     memset((void*)tmp,0,sizeof(t_firewall_rule));
     tmp->target=TARGET_ACCEPT;
     tmp->protocol=safe_strdup("tcp");
-    tmp->port=safe_strdup("88");
-    tmp->mask=safe_strdup(ip);
+    tmp->port=safe_strdup(config.auth_port);
+    tmp->mask=safe_strdup(auth_server_ip);
     if(ruleset->rules==NULL)
     {
         ruleset->rules=tmp;
@@ -725,7 +727,7 @@ void free_ip_init()
         tmp->next=ruleset->rules;
         ruleset->rules=tmp;
     }
-    t_IP* ip=free_ip_list;
+    t_IP* ip=config.free_ip_list;
     for(;ip;ip=ip->next)
     {
         tmp=safe_malloc(sizeof(t_firewall_rule));
@@ -733,7 +735,7 @@ void free_ip_init()
         tmp->target=TARGET_ACCEPT;
         tmp->protocol=safe_strdup("tcp");
         tmp->port=safe_strdup("80");
-        tmp->mask=safe_strdup(ip);
+        tmp->mask=safe_strdup(ip->ip);
         tmp->next=ruleset->rules;
         ruleset->rules=tmp;
     }
@@ -749,17 +751,17 @@ static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
 
 void config_from_server()
 {
-    char buf[MAX_BUF],
+    char buf[MAX_BUF];
     char ip[16];
     int res=resolve_host(config.auth_server,ip);
     if(res<0){
-        debug(Log_INFO,"Resolve auth server[%s] error.",config.authserver);
+        debug(LOG_INFO,"Resolve auth server[%s] error.",config.auth_server);
         exit(1);
     }
     ip[15]=0;
-    int res = config_request(ip,config.auth_port,config.config_path,config.uid,VERSION,buf);
+    res = config_request(ip,config.auth_port,config.config_path,config.uid,VERSION,buf);
     if(res<0){
-        debug(Log_INFO,"Read config from auth server[%s] error.",config.authserver);
+        debug(LOG_INFO,"Read config from auth server[%s] error.",config.auth_server);
         return;
     }
     
@@ -1288,7 +1290,7 @@ int add_to_free_ip_list(char *possibleip)
 	}
 	ip=safe_malloc(16);
 	strncpy(ip,possibleip,15);
-	for(p=config.free_ip_list;p!=NULL,p=p->next){
+	for(p=config.free_ip_list;p!=NULL;p=p->next){
 		if(!strcmp(p->ip,ip))
 		{
 			debug(LOG_INFO,"ip address [%s] already on free ip list",ip);
@@ -1698,7 +1700,7 @@ void
 config_validate(void)
 {
 	config_notnull(config.gw_interface, "GatewayInterface");
-    config_notnull(config.authserver, "auth_server");
+    config_notnull(config.auth_server, "auth_server");
 	if (missing_parms) {
 		debug(LOG_ERR, "Configuration is not complete, exiting...");
 		exit(-1);
