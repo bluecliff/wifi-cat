@@ -2,3 +2,4 @@
 /ndsctl
 /dist
 *.o
+*.~
