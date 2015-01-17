@@ -705,6 +705,8 @@ void free_ip_init()
         debug(LOG_ERR, "Exiting...");
         exit(-1);
     }
+    t_firewall_rule *tmp;
+    /*
     char auth_server_ip[16];
     if(resolve_host(config.auth_server,auth_server_ip)<0)
     {
@@ -729,6 +731,7 @@ void free_ip_init()
         ruleset->rules=tmp;
     }
     debug(LOG_INFO,"add ip [%s] to free ip list",tmp->mask);
+    */
     t_IP* ip=config.free_ip_list;
     for(;ip;ip=ip->next)
     {
@@ -736,7 +739,7 @@ void free_ip_init()
         memset((void*)tmp,0,sizeof(t_firewall_rule));
         tmp->target=TARGET_ACCEPT;
         tmp->protocol=safe_strdup("tcp");
-        tmp->port=safe_strdup("80");
+        //tmp->port=safe_strdup("80");
         tmp->mask=safe_strdup(ip->ip);
         tmp->next=ruleset->rules;
         ruleset->rules=tmp;
@@ -776,7 +779,7 @@ void config_from_server()
         return;
     }
     json=json+4;
-    debug(LOG_INFO,"json config: %s",json);
+    debug(LOG_DEBUG,"json config: %s",json);
     jsmn_parser p;
     jsmntok_t t[128]; /* We expect no more than 128 tokens */
     jsmn_init(&p);
@@ -790,6 +793,7 @@ void config_from_server()
         debug(LOG_INFO,"Json Object expected\n");
         return;
     }
+    debug(LOG_DEBUG,"total %d items in json",res);
      /* Loop over all keys of the root object */
     int len=0;
     char tmp[32];
@@ -800,6 +804,7 @@ void config_from_server()
             config.auth_path=(char*)safe_malloc(len+1);
             strncpy(config.auth_path,json+t[i+1].start,len);
             config.auth_path[len]=0;
+	    debug(LOG_DEBUG,"config.auth_path:%s",config.auth_path);
             ++i;
         }
         else if(jsoneq(json,&t[i],"configPath")==0){
@@ -808,6 +813,7 @@ void config_from_server()
             config.config_path=(char*)safe_malloc(len+1);
             strncpy(config.config_path,json+t[i+1].start,len);
             config.config_path[len]=0;
+	    debug(LOG_DEBUG,"config.config_path:%s",config.config_path);
             ++i;
         }
         else if(jsoneq(json,&t[i],"netTrafficPath")==0)
@@ -817,6 +823,7 @@ void config_from_server()
             config.net_traffic_path=(char*)safe_malloc(len+1);
             strncpy(config.net_traffic_path,json+t[i+1].start,len);
             config.net_traffic_path[len]=0;
+	    debug(LOG_DEBUG,"config.net_traffic_path:%s",config.net_traffic_path);
             ++i;
         }
         else if(jsoneq(json,&t[i],"gatewayName")==0)
@@ -827,6 +834,7 @@ void config_from_server()
             strncpy(config.gw_name,json+t[i+1].start,len);
             config.gw_name[len]=0;
             ++i;
+	    debug(LOG_DEBUG,"config.gw_name:%s",config.gw_name);
         }
         else if(jsoneq(json,&t[i],"redirectURL")==0)
         {
@@ -836,48 +844,63 @@ void config_from_server()
             strncpy(config.redirectURL,json+t[i+1].start,len);
             config.redirectURL[len]=0;
             ++i;
+	    debug(LOG_DEBUG,"config.redirectURL:%s",config.redirectURL);
         }
         else if(jsoneq(json,&t[i],"maxClients")==0)
         {
             len=t[i+1].end-t[i+1].start;
+	    memset((void*)tmp,0,32);
             strncpy(tmp,json+t[i+1].start,len);
             config.maxclients=atoi(tmp);
             ++i;
+	    debug(LOG_DEBUG,"config.maxclients:%d",config.maxclients);
         }
         else if(jsoneq(json,&t[i],"clientIdleTimeout")==0)
         {
             len=t[i+1].end-t[i+1].start;
+	    memset((void*)tmp,0,32);
             strncpy(tmp,json+t[i+1].start,len);
             config.clienttimeout=atoi(tmp);
             ++i;
+	    debug(LOG_DEBUG,"config.clienttimeout:%d",config.clienttimeout);
         }
         else if(jsoneq(json,&t[i],"clientForceTimeout")==0)
         {
             len=t[i+1].end-t[i+1].start;
+	    memset((void*)tmp,0,32);
             strncpy(tmp,json+t[i+1].start,len);
+	    debug(LOG_DEBUG,"begin process %d item[%d,%d],%s",i,t[i+1].start,t[i+1].end,tmp);
             config.clientforceout=atoi(tmp);
             ++i;
+	    debug(LOG_DEBUG,"config.clientforceout:%d",config.clientforceout);
         }
         else if(jsoneq(json,&t[i],"trafficControl")==0)
         {
             len=t[i+1].end-t[i+1].start;
+	    memset((void*)tmp,0,32);
             strncpy(tmp,json+t[i+1].start,len);
             config.traffic_control=atoi(tmp);
             ++i;
+	    debug(LOG_DEBUG,"config.traffic:%d",config.traffic_control);
         }
-        else if(jsoneq(json,&t[i],"donwloadLimit")==0)
+        else if(jsoneq(json,&t[i],"downloadLimit")==0)
         {
             len=t[i+1].end-t[i+1].start;
+	    memset((void*)tmp,0,32);
             strncpy(tmp,json+t[i+1].start,len);
             config.download_limit=atoi(tmp);
             ++i;
+	    debug(LOG_DEBUG,"config.download_limit:%d",config.download_limit);
         }
         else if(jsoneq(json,&t[i],"uploadLimit")==0)
         {
             len=t[i+1].end-t[i+1].start;
+	    memset((void*)tmp,0,32);
             strncpy(tmp,json+t[i+1].start,len);
             config.upload_limit=atoi(tmp);
             ++i;
+
+	    debug(LOG_DEBUG,"config.upload_limit:%d",config.upload_limit);
         }
         else if(jsoneq(json,&t[i],"freeIPList")==0)
         {
@@ -889,8 +912,10 @@ void config_from_server()
             for (j = 0; j < t[i+1].size; j++) {
                 jsmntok_t *g = &t[i+j+2];
                 len=g->end-g->start;
+		memset((void*)tmp,0,32);
                 strncpy(tmp,json+g->start,len);
                 add_to_free_ip_list(tmp);
+		debug(LOG_DEBUG,"free ip:%s",tmp);
             }
             i += t[i+1].size +1;  
         }
@@ -904,23 +929,28 @@ void config_from_server()
             for (j = 0; j < t[i+1].size; j++) {
                 jsmntok_t *g = &t[i+j+2];
                 len=g->end-g->start;
+		memset((void*)tmp,0,32);
                 strncpy(tmp,json+g->start,len);
                 add_to_blocked_mac_list(tmp);
+	    	debug(LOG_DEBUG,"blocked_mac:%s",tmp);
             }
             i += t[i+1].size +1;  
+            debug(LOG_DEBUG,"item %d will be processed",i);
         }
         else if(jsoneq(json,&t[i],"trustedMACList")==0)
         {
             int j;
             if (t[i+1].type != JSMN_ARRAY) {
-                debug(LOG_INFO,"expect FreeIPList to be an array of strings");
+                debug(LOG_INFO,"expect trustedMACList to be an array of strings");
                 exit(1); /* We expect groups to be an array of strings */
             }
             for (j = 0; j < t[i+1].size; j++) {
                 jsmntok_t *g = &t[i+j+2];
                 len=g->end-g->start;
+		memset((void*)tmp,0,32);
                 strncpy(tmp,json+g->start,len);
                 add_to_trusted_mac_list(tmp);
+	    	debug(LOG_DEBUG,"trusted_mac:%s",tmp);
             }
             i += t[i+1].size +1;  
         }
