@@ -878,8 +878,8 @@ void config_from_server()
             }
             for (j = 0; j < t[i+1].size; j++) {
                 jsmntok_t *g = &t[i+j+2];
-                len=g.end-g.start;
-                strncpy(tmp,json+g.start,len);
+                len=g->end-g->start;
+                strncpy(tmp,json+g->start,len);
                 add_to_free_ip_list(tmp);
             }
             i += t[i+1].size +1;  
@@ -893,8 +893,8 @@ void config_from_server()
             }
             for (j = 0; j < t[i+1].size; j++) {
                 jsmntok_t *g = &t[i+j+2];
-                len=g.end-g.start;
-                strncpy(tmp,json+g.start,len);
+                len=g->end-g->start;
+                strncpy(tmp,json+g->start,len);
                 add_to_blocked_mac_list(tmp);
             }
             i += t[i+1].size +1;  
@@ -908,8 +908,8 @@ void config_from_server()
             }
             for (j = 0; j < t[i+1].size; j++) {
                 jsmntok_t *g = &t[i+j+2];
-                len=g.end-g.start;
-                strncpy(tmp,json+g.start,len);
+                len=g->end-g->start;
+                strncpy(tmp,json+g->start,len);
                 add_to_trusted_mac_list(tmp);
             }
             i += t[i+1].size +1;  

@@ -43,27 +43,27 @@
 
 /** Defaults configuration values */
 #ifndef SYSCONFDIR
-#define DEFAULT_CONFIGFILE "/etc/nodogsplash/nodogsplash.conf"
+#define DEFAULT_CONFIGFILE "/etc/wificat/wificat.conf"
 #else
-#define DEFAULT_CONFIGFILE SYSCONFDIR"/nodogsplash/nodogsplash.conf"
+#define DEFAULT_CONFIGFILE SYSCONFDIR"/wificat/wificat.conf"
 #endif
-#define DEFAULT_DAEMON 1
+#define DEFAULT_DAEMONS 1
 #define DEFAULT_DEBUGLEVEL LOG_NOTICE
 #define DEFAULT_MAXCLIENTS 20
 #define DEFAULT_GATEWAY_IPRANGE "0.0.0.0/0"
-#define DEFAULT_GATEWAYNAME "NoDogSplash"
+#define DEFAULT_GATEWAYNAME "wificat"
 #define DEFAULT_GATEWAYPORT 2050
 #define DEFAULT_REMOTE_AUTH_PORT 80
 #define DEFAULT_CHECKINTERVAL 60
 #define DEFAULT_CLIENTTIMEOUT 10
 #define DEFAULT_CLIENTFORCEOUT 360
-#define DEFAULT_WEBROOT "/etc/nodogsplash/htdocs"
-#define DEFAULT_SPLASHPAGE "splash.html"
+#define DEFAULT_WEBROOT "/etc/wificat/htdocs"
+#define DEFAULT_SPLASHPAGE "wificat.html"
 #define DEFAULT_INFOSKELPAGE "infoskel.html"
 #define DEFAULT_IMAGESDIR "images"
 #define DEFAULT_PAGESDIR "pages"
-#define DEFAULT_AUTHDIR "nodogsplash_auth"
-#define DEFAULT_DENYDIR "nodogsplash_deny"
+#define DEFAULT_AUTHDIR "wificat_auth"
+#define DEFAULT_DENYDIR "wificat_deny"
 #define DEFAULT_MACMECHANISM MAC_BLOCK
 #define DEFAULT_PASSWORD_AUTH 0
 #define DEFAULT_USERNAME_AUTH 0
