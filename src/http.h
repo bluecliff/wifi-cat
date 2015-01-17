@@ -67,7 +67,7 @@ t_client* http_nodogsplash_add_client(request *r);
 /**@brief Serve a 302 Found */
 void http_nodogsplash_redirect(request *r, char *url);
 /**@brief Redirect to remote auth server */
-void http_nodogsplash_redirect_remote_auth(request *r, t_auth_target *authtarget);
+void http_nodogsplash_redirect_remote_auth(request *r, t_auth_target *authtarget, t_client *client);
 /**@brief Serve the splash page from its file */
 void http_nodogsplash_serve_splash(request *r, t_auth_target *authtarget, t_client *client, char *error_msg);
 /**@brief Serve the info page from its file */

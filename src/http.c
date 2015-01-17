@@ -187,7 +187,7 @@ http_nodogsplash_first_contact(request *r)
 
 	/* Create redirect URL for this contact as appropriate */
 	redir = http_nodogsplash_make_redir(origurl);
-	debug(LOG_DEBUG,"[%s] redirect:%s",r->clientAddr,redir);
+	debug(LOG_DEBUG,"[%s] redirected to:%s",r->clientAddr,redir);
 
 	/* Create authtarget with all needed info */
 	authtarget = http_nodogsplash_make_authtarget(client->token,redir);
@@ -369,7 +369,7 @@ void
 http_nodogsplash_redirect_remote_auth(request *r, t_auth_target *authtarget,t_client *client)
 {
 	char *remoteurl;
-	char *encgateway, *encauthaction, *encredir, *enctoken;
+	char *encgateway, *encauthaction, *encredir, *enctoken, *encmac;
 	s_config	*config;
 	config = config_get_config();
 	/* URL encode variables, redirect to remote auth server */
@@ -378,7 +378,9 @@ http_nodogsplash_redirect_remote_auth(request *r, t_auth_target *authtarget,t_cl
 	encauthaction = httpdUrlEncode(authtarget->authaction);
 	encredir = httpdUrlEncode(authtarget->redir);
 	enctoken = httpdUrlEncode(authtarget->token);
-	safe_asprintf(&remoteurl, "%s:%d%S?uid=%d&authaction=%s&redir=%s&tok=%s&mac=%s",
+	encmac = httpdUrlEncode(client->mac);
+	
+	safe_asprintf(&remoteurl, "http://%s:%d%s?uid=%d&authaction=%s&redir=%s&tok=%s&mac=%s",
 				  config->auth_server,
 				  config->auth_port,
 				  config->auth_path,
@@ -386,7 +388,7 @@ http_nodogsplash_redirect_remote_auth(request *r, t_auth_target *authtarget,t_cl
 				  encauthaction,
 				  encredir,
 				  enctoken,
-				  client->mac);
+				  encmac);
 	http_nodogsplash_redirect(r, remoteurl);
 	free(encauthaction);
 	free(encredir);
@@ -516,8 +518,8 @@ void
 http_nodogsplash_redirect(request *r, char *url)
 {
 	char *header;
-	debug(LOG_DEBUG,"redirect %s to %s",r->clientAddr,url);
-	httpdSetResponse(r, "302 Found");
+	debug(LOG_DEBUG,"Redirect client %s to %s",r->clientAddr,url);
+	httpdSetResponse(r, "302 Found\n");
 	safe_asprintf(&header, "Location: %s",url);
 	httpdAddHeader(r, header);
 
