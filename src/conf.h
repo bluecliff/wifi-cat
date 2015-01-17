@@ -47,7 +47,7 @@
 #else
 #define DEFAULT_CONFIGFILE SYSCONFDIR"/wificat/wificat.conf"
 #endif
-#define DEFAULT_DAEMONS 1
+#define DEFAULT_DAEMON 1
 #define DEFAULT_DEBUGLEVEL LOG_NOTICE
 #define DEFAULT_MAXCLIENTS 20
 #define DEFAULT_GATEWAY_IPRANGE "0.0.0.0/0"
@@ -212,7 +212,7 @@ typedef struct {
     
     //damon add on 14/12/11
     char *auth_server;
-    int auth_port;
+    unsigned int auth_port;
     char *auth_path;
     char *config_path;
     char *net_traffic_path;

@@ -13,6 +13,7 @@
 #include <string.h>
 #include <syslog.h>
 
+#include "util.h"
 #include "common.h"
 #include "safe.h"
 #include "debug.h"
@@ -32,7 +33,7 @@ int _resolve_host(int level,char *hostname,char* ip)
      */
     debug(LOG_DEBUG, "Resolving auth server [%s]", hostname);
     level++;
-    h_addr = wd_gethostbyname(hostname,1);
+    h_addr = wd_gethostbyname(hostname);
     if (!h_addr) {
         /*
          * DNS resolving it failed
@@ -42,7 +43,7 @@ int _resolve_host(int level,char *hostname,char* ip)
         debug(LOG_DEBUG, "Level %d: Resolving auth server [%s] failed",level, hostname);
         for (popularserver = popular_servers; *popularserver; popularserver++) {
             debug(LOG_DEBUG, "Level %d: Resolving popular server [%s]",level, *popularserver);
-            h_addr = wd_gethostbyname(*popularserver,1);
+            h_addr = wd_gethostbyname(*popularserver);
             if (h_addr) {
                 debug(LOG_DEBUG, "Level %d: Resolving popular server [%s] succeeded = [%s]",level, *popularserver, inet_ntoa(*h_addr));
                 break;
@@ -130,7 +131,7 @@ int _connect_auth_server(char* ip,int port) {
 int connect_auth_server(char* ip,int port) {
     int sockfd;
     int level=0;
-    while((++level)<5)
+    while((++level)<=5)
     {
         sockfd = _connect_auth_server(ip,port);
         if (sockfd == -1) {
@@ -159,9 +160,9 @@ int config_request(char *ip,int port,char *path,int id,char *version,char *buf)
         /* Could not connect to auth server */
         return (-1);
     }
-    memset(buf, 0, sizeof(buf));
-    snprintf(buf, (sizeof(buf) - 1),
-            "GET %sgw_id=%d HTTP/1.0\r\n"
+    memset(buf, 0, MAX_BUF);
+    snprintf(buf, MAX_BUF - 1,
+            "GET %s?uid=%d HTTP/1.0\r\n"
             "User-Agent: WiFiCat %s\r\n"
             "Host: %s\r\n"
             "\r\n",
@@ -169,7 +170,7 @@ int config_request(char *ip,int port,char *path,int id,char *version,char *buf)
             id,
             version,
             ip);
-    debug(LOG_DEBUG, "Sending HTTP request to auth server: [%s]\n", buf);
+    debug(LOG_DEBUG, "Sending HTTP request to auth server: [%s]", buf);
     
     send(sockfd, buf, strlen(buf), 0);
     debug(LOG_DEBUG, "Reading response");

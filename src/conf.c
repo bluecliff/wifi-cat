@@ -181,12 +181,12 @@ static const struct {
 	{ "FW_MARK_TRUSTED", oFWMarkTrusted },
 	{ "FW_MARK_BLOCKED", oFWMarkBlocked },
 	//damon add on 14/12/11
-	{ "auth_server", oAuthServer},
-	{ "auth_port", oAuthPort},
-	{ "auth_path", oAuthPath},
-	{ "config_path", oConfigPath},
-	{ "net_traffic_path", oNetTrafficPath},
-	{ "free_ip_list",oFreeIPList},
+	{ "authserver", oAuthServer},
+	{ "authport", oAuthPort},
+	{ "authpath", oAuthPath},
+	{ "configpath", oConfigPath},
+	{ "nettrafficpath", oNetTrafficPath},
+	{ "freeiplist",oFreeIPList},
 	{ "uid",oUID},
 	//damon end
 	{ NULL, oBadOption },
@@ -716,7 +716,8 @@ void free_ip_init()
     memset((void*)tmp,0,sizeof(t_firewall_rule));
     tmp->target=TARGET_ACCEPT;
     tmp->protocol=safe_strdup("tcp");
-    tmp->port=safe_strdup(config.auth_port);
+    tmp->port=(char*)safe_malloc(6);
+    snprintf(tmp->port,6,"%u",config.auth_port);
     tmp->mask=safe_strdup(auth_server_ip);
     if(ruleset->rules==NULL)
     {
@@ -727,6 +728,7 @@ void free_ip_init()
         tmp->next=ruleset->rules;
         ruleset->rules=tmp;
     }
+    debug(LOG_INFO,"add ip [%s] to free ip list",tmp->mask);
     t_IP* ip=config.free_ip_list;
     for(;ip;ip=ip->next)
     {
@@ -738,6 +740,7 @@ void free_ip_init()
         tmp->mask=safe_strdup(ip->ip);
         tmp->next=ruleset->rules;
         ruleset->rules=tmp;
+        debug(LOG_INFO,"add ip [%s] to free ip list",tmp->mask);
     }
 }
 
@@ -766,7 +769,14 @@ void config_from_server()
     }
     
     int i;
-    char* json=buf;
+    char* json=strstr(buf,"\r\n\r\n");
+    if(json==NULL)
+    {
+        debug(LOG_INFO,"Read config from auth server[%s] error.",config.auth_server);
+        return;
+    }
+    json=json+4;
+    debug(LOG_INFO,"json config: %s",json);
     jsmn_parser p;
     jsmntok_t t[128]; /* We expect no more than 128 tokens */
     jsmn_init(&p);
@@ -784,7 +794,7 @@ void config_from_server()
     int len=0;
     char tmp[32];
     for (i = 1; i < res; i++) {
-        if(jsoneq(json,&t[i],"AuthPath")==0){
+        if(jsoneq(json,&t[i],"authPath")==0){
             free(config.auth_path);
             len=t[i+1].end-t[i+1].start;
             config.auth_path=(char*)safe_malloc(len+1);
@@ -792,7 +802,7 @@ void config_from_server()
             config.auth_path[len]=0;
             ++i;
         }
-        else if(jsoneq(json,&t[i],"ConfigPath")==0){
+        else if(jsoneq(json,&t[i],"configPath")==0){
             free(config.config_path);
             len=t[i+1].end-t[i+1].start;
             config.config_path=(char*)safe_malloc(len+1);
@@ -800,7 +810,7 @@ void config_from_server()
             config.config_path[len]=0;
             ++i;
         }
-        else if(jsoneq(json,&t[i],"NetTrafficPath")==0)
+        else if(jsoneq(json,&t[i],"netTrafficPath")==0)
         {
             free(config.net_traffic_path);
             len=t[i+1].end-t[i+1].start;
@@ -809,7 +819,7 @@ void config_from_server()
             config.net_traffic_path[len]=0;
             ++i;
         }
-        else if(jsoneq(json,&t[i],"GatewayName")==0)
+        else if(jsoneq(json,&t[i],"gatewayName")==0)
         {
             free(config.gw_name);
             len=t[i+1].end-t[i+1].start;
@@ -818,7 +828,7 @@ void config_from_server()
             config.gw_name[len]=0;
             ++i;
         }
-        else if(jsoneq(json,&t[i],"RedirectURL")==0)
+        else if(jsoneq(json,&t[i],"redirectURL")==0)
         {
             free(config.redirectURL);
             len=t[i+1].end-t[i+1].start;
@@ -827,49 +837,49 @@ void config_from_server()
             config.redirectURL[len]=0;
             ++i;
         }
-        else if(jsoneq(json,&t[i],"MaxClients")==0)
+        else if(jsoneq(json,&t[i],"maxClients")==0)
         {
             len=t[i+1].end-t[i+1].start;
             strncpy(tmp,json+t[i+1].start,len);
             config.maxclients=atoi(tmp);
             ++i;
         }
-        else if(jsoneq(json,&t[i],"ClientIdleTimeout")==0)
+        else if(jsoneq(json,&t[i],"clientIdleTimeout")==0)
         {
             len=t[i+1].end-t[i+1].start;
             strncpy(tmp,json+t[i+1].start,len);
             config.clienttimeout=atoi(tmp);
             ++i;
         }
-        else if(jsoneq(json,&t[i],"ClientForceTimeout")==0)
+        else if(jsoneq(json,&t[i],"clientForceTimeout")==0)
         {
             len=t[i+1].end-t[i+1].start;
             strncpy(tmp,json+t[i+1].start,len);
             config.clientforceout=atoi(tmp);
             ++i;
         }
-        else if(jsoneq(json,&t[i],"TrafficControl")==0)
+        else if(jsoneq(json,&t[i],"trafficControl")==0)
         {
             len=t[i+1].end-t[i+1].start;
             strncpy(tmp,json+t[i+1].start,len);
             config.traffic_control=atoi(tmp);
             ++i;
         }
-        else if(jsoneq(json,&t[i],"DonwloadLimit")==0)
+        else if(jsoneq(json,&t[i],"donwloadLimit")==0)
         {
             len=t[i+1].end-t[i+1].start;
             strncpy(tmp,json+t[i+1].start,len);
             config.download_limit=atoi(tmp);
             ++i;
         }
-        else if(jsoneq(json,&t[i],"UploadLimit")==0)
+        else if(jsoneq(json,&t[i],"uploadLimit")==0)
         {
             len=t[i+1].end-t[i+1].start;
             strncpy(tmp,json+t[i+1].start,len);
             config.upload_limit=atoi(tmp);
             ++i;
         }
-        else if(jsoneq(json,&t[i],"FreeIPList"))
+        else if(jsoneq(json,&t[i],"freeIPList")==0)
         {
             int j;
             if (t[i+1].type != JSMN_ARRAY) {
@@ -884,7 +894,7 @@ void config_from_server()
             }
             i += t[i+1].size +1;  
         }
-        else if(jsoneq(json,&t[i],"BlockedMACList"))
+        else if(jsoneq(json,&t[i],"blockedMACList")==0)
         {
             int j;
             if (t[i+1].type != JSMN_ARRAY) {
@@ -899,7 +909,7 @@ void config_from_server()
             }
             i += t[i+1].size +1;  
         }
-        else if(jsoneq(json,&t[i],"TrustedMACList"))
+        else if(jsoneq(json,&t[i],"trustedMACList")==0)
         {
             int j;
             if (t[i+1].type != JSMN_ARRAY) {
@@ -1227,7 +1237,7 @@ config_read(const char *filename)
 		    config.net_traffic_path=safe_strdup(p1);
 		    break;
 		case oUID:
-		    if(sscanf(p1, "%d", &config.uid) < 1) {
+		    if(sscanf(p1, "%d", &config.uid) < 0) {
 				debug(LOG_ERR, "Bad arg %s to option %s on line %d in %s", p1, s, linenum, filename);
 				debug(LOG_ERR, "Exiting...");
 				exit(-1);

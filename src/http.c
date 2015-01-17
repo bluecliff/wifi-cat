@@ -152,7 +152,6 @@ http_nodogsplash_callback_index(httpd *webserver, request *r)
 {
 	debug(LOG_INFO, "Capturing index request from %s for [%s%s]",
 		  r->clientAddr, r->request.host, r->request.path);
-
 	http_nodogsplash_first_contact(r);
 }
 
@@ -162,11 +161,11 @@ http_nodogsplash_callback_index(httpd *webserver, request *r)
 void
 http_nodogsplash_first_contact(request *r)
 {
+	debug(LOG_DEBUG,"[%s]first contact",r->clientAddr);
 	t_client *client;
 	t_auth_target *authtarget;
 	s_config *config;
-	char *redir, *origurl, cmd_buff[255], *data = NULL;
-	int seconds;
+	char *redir, *origurl; 
 
 	/* only allow GET requests */
 	if (r->request.method != HTTP_GET) {
@@ -188,38 +187,14 @@ http_nodogsplash_first_contact(request *r)
 
 	/* Create redirect URL for this contact as appropriate */
 	redir = http_nodogsplash_make_redir(origurl);
+	debug(LOG_DEBUG,"[%s] redirect:%s",r->clientAddr,redir);
 
 	/* Create authtarget with all needed info */
 	authtarget = http_nodogsplash_make_authtarget(client->token,redir);
 
 	free(origurl);
 
-	if(config->authenticate_immediately) {
-		/* Don't serve splash, just authenticate */
-		http_nodogsplash_callback_action(r,authtarget,AUTH_MAKE_AUTHENTICATED);
-	} else if (config->enable_preauth) {
-		snprintf(cmd_buff, sizeof(cmd_buff) - 1, "%s auth_status %s",
-				 config->bin_voucher, client->mac);
-		data = system_exec(cmd_buff);
-
-		if(!data)
-			goto serve_splash;
-
-		seconds = data_extract_bw(data, client);
-		if(seconds < 1)
-			goto serve_splash;
-
-		debug(LOG_NOTICE, "Remote auth data: client [%s, %s] authenticated %d seconds",
-			  client->mac, client->ip, seconds);
-		http_nodogsplash_callback_action(r,authtarget,AUTH_MAKE_AUTHENTICATED);
-		client->added_time = time(NULL) - (config->checkinterval * config->clientforceout) + seconds;
-		free(data);
-	} else {
-		/* Serve the splash page (or redirect to remote authenticator) */
-serve_splash:
-		free(data);
-		http_nodogsplash_serve_splash(r,authtarget, client, NULL);
-	}
+	http_nodogsplash_serve_splash(r,authtarget,client,NULL);
 
 	http_nodogsplash_free_authtarget(authtarget);
 }
@@ -391,7 +366,7 @@ http_nodogsplash_add_client(request *r)
 }
 
 void
-http_nodogsplash_redirect_remote_auth(request *r, t_auth_target *authtarget)
+http_nodogsplash_redirect_remote_auth(request *r, t_auth_target *authtarget,t_client *client)
 {
 	char *remoteurl;
 	char *encgateway, *encauthaction, *encredir, *enctoken;
@@ -403,13 +378,15 @@ http_nodogsplash_redirect_remote_auth(request *r, t_auth_target *authtarget)
 	encauthaction = httpdUrlEncode(authtarget->authaction);
 	encredir = httpdUrlEncode(authtarget->redir);
 	enctoken = httpdUrlEncode(authtarget->token);
-	safe_asprintf(&remoteurl, "%s:%d?id=%d&authaction=%s&redir=%s&tok=%s",
+	safe_asprintf(&remoteurl, "%s:%d%S?uid=%d&authaction=%s&redir=%s&tok=%s&mac=%s",
 				  config->auth_server,
 				  config->auth_port,
+				  config->auth_path,
 				  config->uid,
 				  encauthaction,
 				  encredir,
-				  enctoken);
+				  enctoken,
+				  client->mac);
 	http_nodogsplash_redirect(r, remoteurl);
 	free(encauthaction);
 	free(encredir);
@@ -433,7 +410,8 @@ http_nodogsplash_serve_splash(request *r, t_auth_target *authtarget, t_client *c
 
 	if(config->remote_auth_action) {
 		/* Redirect to remote auth server instead of serving local splash page */
-		http_nodogsplash_redirect_remote_auth(r, authtarget);
+		debug(LOG_DEBUG,"reday redirect to auth server");
+		http_nodogsplash_redirect_remote_auth(r, authtarget,client);
 		return;
 	}
 
@@ -538,7 +516,7 @@ void
 http_nodogsplash_redirect(request *r, char *url)
 {
 	char *header;
-
+	debug(LOG_DEBUG,"redirect %s to %s",r->clientAddr,url);
 	httpdSetResponse(r, "302 Found");
 	safe_asprintf(&header, "Location: %s",url);
 	httpdAddHeader(r, header);

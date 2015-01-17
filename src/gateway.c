@@ -243,7 +243,7 @@ main_loop(void)
 
 	/* Initializes the web server */
 	if ((webserver = httpdCreate(config->gw_address, config->gw_port)) == NULL) {
-		debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
+		debug(LOG_ERR, "Could not create web server[%s:%d]: %s",config->gw_address,config->gw_port, strerror(errno));
 		exit(1);
 	}
 	debug(LOG_NOTICE, "Created web server on %s:%d", config->gw_address, config->gw_port);
