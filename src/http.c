@@ -181,7 +181,7 @@ http_nodogsplash_first_contact(request *r)
 	/* We just assume protocol http; after all we caught the client by
 	   redirecting port 80 tcp packets
 	*/
-	safe_asprintf(&origurl,"http://%s%s%s%s",
+	safe_asprintf(&origurl,"%s%s%s%s",
 				  r->request.host,r->request.path,
 				  r->request.query[0]?"?":"",r->request.query);
 
@@ -331,8 +331,8 @@ http_nodogsplash_callback_auth(httpd *webserver, request *r)
 	    return;
 	/* Get info we need from request, and do action */
 	authtarget = http_nodogsplash_decode_authtarget(r);    
-    //认证
-    http_nodogsplash_callback_action (r,authtarget,AUTH_MAKE_AUTHENTICATED);
+	//认证
+	http_nodogsplash_callback_action (r,authtarget,AUTH_MAKE_AUTHENTICATED);
 	http_nodogsplash_free_authtarget(authtarget);
 }
 
@@ -380,7 +380,7 @@ http_nodogsplash_redirect_remote_auth(request *r, t_auth_target *authtarget,t_cl
 	enctoken = httpdUrlEncode(authtarget->token);
 	encmac = httpdUrlEncode(client->mac);
 	
-	safe_asprintf(&remoteurl, "http://%s:%d%s?uid=%d&authaction=%s&redir=%s&tok=%s&mac=%s",
+	safe_asprintf(&remoteurl, "%s:%d%s?uid=%d&authaction=%s&redir=%s&tok=%s&mac=%s",
 				  config->auth_server,
 				  config->auth_port,
 				  config->auth_path,
@@ -490,7 +490,9 @@ http_nodogsplash_serve_info(request *r, char *title, char *content)
 	/* We need to have imagesdir and pagesdir appear in the page
 	   as absolute paths, so they work no matter what the
 	   initial user request URL was  */
+	debug(LOG_DEBUG,"errmsg:%s,%s,%s,%s",config->gw_name,VERSION,title,content);
 	safe_asprintf(&abspath, "/%s", config->imagesdir);
+	debug(LOG_DEBUG,"errmsg:%s,%s,%s,%s,%s",config->gw_name,VERSION,title,content,abspath);
 	httpdAddVariable(r,"imagesdir",abspath);
 	free(abspath);
 	safe_asprintf(&abspath, "/%s", config->pagesdir);
@@ -520,7 +522,7 @@ http_nodogsplash_redirect(request *r, char *url)
 	char *header;
 	debug(LOG_DEBUG,"Redirect client %s to %s",r->clientAddr,url);
 	httpdSetResponse(r, "302 Found\n");
-	safe_asprintf(&header, "Location: %s",url);
+	safe_asprintf(&header, "Location: http://%s",url);
 	httpdAddHeader(r, header);
 
 	httpdPrintf(r, "<html><head></head><body><a href='%s'>Click here to continue to<br>%s</a></body></html>",url,url);
@@ -544,15 +546,19 @@ http_nodogsplash_decode_authtarget(request *r)
 	var = httpdGetVariableByName(r,"tok");
 	if(var && var->value) {
 		token = var->value;
+		debug(LOG_DEBUG,"Get token from authserver: %s",token);
 	} else {
 		token = "";
+		debug(LOG_DEBUG,"Did not get token from auth server");
 	}
 
 	var = httpdGetVariableByName(r,"redir");
 	if(var && var->value) {
 		redir = var->value;
+		debug(LOG_DEBUG,"Get redir from authserver: %s",redir);
 	} else {
 		redir = "";
+		debug(LOG_DEBUG,"Did not get redir from auth server");
 	}
 
 	authtarget = http_nodogsplash_make_authtarget(token,redir);
