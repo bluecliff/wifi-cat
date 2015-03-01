@@ -137,7 +137,8 @@ termination_handler(int s)
 	/* XXX Hack
 	 * Aparently pthread_cond_timedwait under openwrt prevents signals (and therefore
 	 * termination handler) from happening so we need to explicitly kill the threads
-	 * that use that
+
+*	 * that use that
 	 */
 	if (tid_client_check) {
 		debug(LOG_INFO, "Explicitly killing the fw_counter thread");
@@ -200,6 +201,80 @@ init_signals(void)
 	if (sigaction(SIGINT, &sa, NULL) == -1) {
 		debug(LOG_ERR, "sigaction(): %s", strerror(errno));
 		exit(1);
+	}
+}
+
+/**
+ * main loop when the internet is not connected
+ */
+static void main_loop_without_word(void)
+{
+	debug(LOG_INFO, "Into the main loop of no internet");
+	s_config *config = config_get_config();
+	request *r;
+	/* If we don't have the Gateway IP address, get it. Exit on failure. */
+	if (!config->gw_address) {
+		debug(LOG_DEBUG, "Finding IP address of %s", config->gw_interface);
+		if ((config->gw_address = get_iface_ip(config->gw_interface)) == NULL) {
+			debug(LOG_ERR, "Could not get IP address information of %s, exiting...", config->gw_interface);
+			exit(1);
+		}
+		if ((config->gw_mac = get_iface_mac(config->gw_interface)) == NULL) {
+			debug(LOG_ERR, "Could not get MAC address information of %s, exiting...", config->gw_interface);
+			exit(1);
+		}
+		debug(LOG_NOTICE, "Detected gateway %s at %s (%s)", config->gw_interface, config->gw_address, config->gw_mac);
+	}
+
+	/* Initializes the web server */
+	if ((webserver = httpdCreate(config->gw_address, config->gw_port)) == NULL) {
+		debug(LOG_ERR, "Could not create web server[%s:%d]: %s",config->gw_address,config->gw_port, strerror(errno));
+		exit(1);
+	}
+	debug(LOG_NOTICE, "Created web server on %s:%d", config->gw_address, config->gw_port);
+
+	/* Set web root for server */
+	debug(LOG_DEBUG, "Setting web root: %s",config->webroot);
+	httpdSetFileBase(webserver,config->webroot);
+
+	/* Add images files to server: any file in config->imagesdir can be served */
+	debug(LOG_DEBUG, "Setting images subdir: %s",config->imagesdir);
+	httpdAddWildcardContent(webserver,config->imagesdir,NULL,config->imagesdir);
+
+	/* Add pages files to server: any file in config->pagesdir can be served */
+	debug(LOG_DEBUG, "Setting pages subdir: %s",config->pagesdir);
+	httpdAddWildcardContent(webserver,config->pagesdir,NULL,config->pagesdir);
+
+	debug(LOG_DEBUG, "Registering callbacks to web server");
+
+	httpdAddCContent(webserver, "/", "", 0, NULL, http_wificat_config_index);
+	httpdAddCWildcardContent(webserver, config->config_dir, NULL, http_wificat_config);
+	httpdAddC404Content(webserver, http_wificat_callback_404);
+
+	debug(LOG_NOTICE, "Waiting for connections");
+	while(1) {
+		r = httpdGetConnection(webserver, NULL);
+
+		/* We can't convert this to a switch because there might be
+		 * values that are not -1, 0 or 1. */
+		if (webserver->lastError == -1) {
+			/* Interrupted system call */
+			continue; /* continue loop from the top */
+		} else if (webserver->lastError < -1) {
+			/*
+			 * FIXME
+			 * An error occurred - should we abort?
+			 * reboot the device ?
+			 */
+			debug(LOG_ERR, "FATAL: httpdGetConnection returned unexpected value %d, exiting.", webserver->lastError);
+		} else if (r != NULL) {
+			/* We got a connection */
+			handle_http_request(webserver, r);
+		} else {
+			/* webserver->lastError should be 2 */
+			/* XXX We failed an ACL.... No handling because
+			 * we don't set any... */
+		}
 	}
 }
 
@@ -345,11 +420,11 @@ int main(int argc, char **argv)
 	config_validate();
 	
 
-    //damon add 14/12/14
+	//damon add 14/12/14
 	//read config from server
 	debug(LOG_NOTICE,"Reading config from server %s", config->auth_server);
 	config_from_server();
-    free_ip_init();
+	free_ip_init();
 	//damon end
 
 	/* Initializes the linked list of connected clients */

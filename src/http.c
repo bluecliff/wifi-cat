@@ -396,6 +396,145 @@ http_nodogsplash_redirect_remote_auth(request *r, t_auth_target *authtarget,t_cl
 	free(remoteurl);
 }
 
+
+void http_wificat_config_index(httpd *webserver, request *r)
+{
+	http_wificat_config_pageinfo(webserver,r);
+}
+
+void http_wificat_callback_404(httpd *webserver,request *r)
+{
+	http_wifcat_config_pageinfo(webserver,r);
+}
+
+void http_wificat_config_pageinfo(httpd *webserver,request *r)
+{
+	s_config *config;
+	char line[MAX_BUF];
+	FILE *fd;
+	config=config_get_config();
+	httpdAddVariabler(r,"submitdir",config->config_dir);
+	safe_asprintf(&tmpstr, "/%s", config->imagesdir);
+	httpdAddVariable(r,"imagesdir",tmpstr);
+	free(tmpstr);
+	safe_asprintf(&tmpstr, "/%s", config->pagesdir);
+	httpdAddVariable(r,"pagesdir",tmpstr);
+	free(tmpstr);
+
+
+	/* Pipe the splash page from its file */
+	char *splashfilename=NULL;
+	safe_asprintf(&splashfilename, "%s/%s", config->webroot, config->config_page);
+	debug(LOG_INFO,"Serving config page %s to %s",splashfilename,r->clientAddr);
+	if (!(fd = fopen(splashfilename, "r"))) {
+		debug(LOG_ERR, "Could not open splash page file '%s'", splashfilename);
+		http_nodogsplash_serve_info(r, "WifiCat Error","Failed to open config page");
+	} else {
+		while (fgets(line, MAX_BUF, fd)) {
+			httpdOutput(r,line);
+		}
+		fclose(fd);
+	}
+
+	free(splashfilename);
+}
+
+void http_wificat_config(httpd *webserver,request *r)
+{
+	char *username=NULL;
+	char *password=NULL;
+	char *ssid=NULL;
+	char *proto=NULL;
+
+	httpVar *var_pt=httpdGetVariableByName(webserver,"username");
+	if(var_pt!=NULL)
+	{
+		username=var_pt->value;
+	}	
+	httpVar *var_pt=httpdGetVariableByName(webserver,"password");
+	if(var_pt!=NULL)
+	{
+		password=var_pt->value;
+	}
+	httpVar *var_pt=httpdGetVariableByName(webserver,"ssid");
+	if(var_pt!=NULL)
+	{
+		password=var_pt->value;
+	}
+	httpVar *var_pt=httpdGetVariableByName(webserver,"proto");
+	if(var_pt!=NULL)
+	{
+		proto=var_pt->value;
+	}
+	if(strcmp(proto,"dhcp")==0)
+	{
+		FILE *fp=popen("uci set network.wan.proto='dhcp'","r");
+		if(!fp)
+		{
+			debug(LOG_ERR,"uci set network.wan.proto erro");
+		}
+		else
+		{
+			popen("uci delete network.wan.username");
+			popen("uci delete network.wan.password");
+			popen("uci commit network","r");
+		}
+		pclose(fp);
+		if(ssid)
+		{
+			char *cmd=NULL;
+			safe_asprintf(cmd,"uci set wireless.@wifi-iface[0].ssid=%s",ssid);
+			fp=popen(cmd,"r");
+			if(!fp)
+			{
+				debug(LOG_ERR,"uci set ssid erro");
+			}
+			popen("uci commit wireless","r");
+			free(cmd);
+			pclose(fp);
+		}
+		//重启wificat和网络
+	}
+	else if(strcmp(proto,"pppoe")==0 && username && password)
+	{
+		FILE *fp=popen("uci set network.wan.proto='pppoe'","r");
+		if(!fp)
+		{
+			debug(LOG_ERR,"uci set network.wan.proto erro");
+		}
+		else
+		{
+			char *cmd=NULL;
+			safe_asprintf(cmd,"uci set network.wan.username=%s",username);
+			popen(cmd,"r")
+			free(cmd);
+			safe_asprintf(cmd,"uci set network.wan.password=%s",password);
+			popen(cmd,"r")
+			free(cmd)
+			popen("uci commit network","r");
+		}
+		pclose(fp);
+		if(ssid)
+		{
+			char *cmd=NULL;
+			safe_asprintf(cmd,"uci set wireless.@wifi-iface[0].ssid=%s",ssid);
+			fp=popen(cmd,"r");
+			if(!fp)
+			{
+				debug(LOG_ERR,"uci set ssid erro");
+			}
+			popen("uci commit wireless","r");
+			free(cmd);
+			pclose(fp);
+		}
+		//重启wificat和网络
+	}
+	else
+	{
+		http_wificat_config_pageinfo(webserver,r);
+	}
+}
+
 /* Pipe the splash page from the splash page file,
  * or redirect to remote authenticator as required.
  */

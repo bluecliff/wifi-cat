@@ -64,6 +64,10 @@
 #define DEFAULT_PAGESDIR "pages"
 #define DEFAULT_AUTHDIR "wificat_auth"
 #define DEFAULT_DENYDIR "wificat_deny"
+//damon add on 2015/03/01
+#define DEFAULT_CONFIG_DIR "wificat_config"
+#define DEFAULT_CONFIG_PAGE "config.html"
+//damon end
 #define DEFAULT_MACMECHANISM MAC_BLOCK
 #define DEFAULT_PASSWORD_AUTH 0
 #define DEFAULT_USERNAME_AUTH 0
@@ -218,6 +222,8 @@ typedef struct {
     char *net_traffic_path;
     t_IP *free_ip_list;
     int uid;
+    char *config_dir;
+    char *config_page;
     //damon end
 } s_config;
 

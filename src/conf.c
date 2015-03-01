@@ -123,6 +123,8 @@ typedef enum {
 	oNetTrafficPath,
 	oFreeIPList,
 	oUID
+	oConfigDir,
+	oConfigPage,
 	//damon end
 } OpCodes;
 
@@ -188,6 +190,8 @@ static const struct {
 	{ "nettrafficpath", oNetTrafficPath},
 	{ "freeiplist",oFreeIPList},
 	{ "uid",oUID},
+	{ "configdir",oConfigDir},
+	{ "configpage",oConfigPage},
 	//damon end
 	{ NULL, oBadOption },
 };
@@ -277,6 +281,8 @@ config_init(void)
 	config.net_traffic_path = DEFAULT_NET_TRAFFIC_PATH;
 	config.uid=0;
 	config.free_ip_list=NULL;
+	config.config_dir=DEFAULT_CONFIG_DIR;
+	config.config_page=DEFAULT_CONFIG_PAGE;
 	//damon end
 
 	/* Set up default FirewallRuleSets, and their empty ruleset policies */

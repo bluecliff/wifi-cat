@@ -25,6 +25,7 @@ int _resolve_host(int level,char *hostname,char* ip)
     char * popular_servers[] = {
         "www.baidu.com",
         "www.qq.com",
+	"www.taobao.com",
         NULL
     };
     char ** popularserver;
