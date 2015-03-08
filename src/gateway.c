@@ -81,7 +81,7 @@ time_t started_time = 0;
  * parent process. This handler catches it and reaps the child process so it
  * can exit. Otherwise we'd get zombie processes.
  */
-void
+	void
 sigchld_handler(int s)
 {
 	int	status;
@@ -116,7 +116,7 @@ sigchld_handler(int s)
 
 /** Exits cleanly after cleaning up the firewall.
  *  Use this function anytime you need to exit after firewall initialization */
-void
+	void
 termination_handler(int s)
 {
 	static	pthread_mutex_t	sigterm_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -152,7 +152,7 @@ termination_handler(int s)
 /** @internal
  * Registers all the signal handlers
  */
-static void
+	static void
 init_signals(void)
 {
 	struct sigaction sa;
@@ -206,7 +206,7 @@ init_signals(void)
 /**@internal
  * Main execution loop
  */
-static void
+	static void
 main_loop(void)
 {
 	int result;
@@ -343,13 +343,13 @@ int main(int argc, char **argv)
 	debug(LOG_NOTICE,"Reading and validating configuration file %s", config->configfile);
 	config_read(config->configfile);
 	config_validate();
-	
 
-    //damon add 14/12/14
+
+	//damon add 14/12/14
 	//read config from server
 	debug(LOG_NOTICE,"Reading config from server %s", config->auth_server);
 	config_from_server();
-    free_ip_init();
+	free_ip_init();
 	//damon end
 
 	/* Initializes the linked list of connected clients */
@@ -364,14 +364,14 @@ int main(int argc, char **argv)
 		debug(LOG_NOTICE, "Starting as daemon, forking to background");
 
 		switch(safe_fork()) {
-		case 0: /* child */
-			setsid();
-			main_loop();
-			break;
+			case 0: /* child */
+				setsid();
+				main_loop();
+				break;
 
-		default: /* parent */
-			exit(0);
-			break;
+			default: /* parent */
+				exit(0);
+				break;
 		}
 	} else {
 		main_loop();
