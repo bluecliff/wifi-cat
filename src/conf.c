@@ -1329,6 +1329,7 @@ int add_to_free_ip_list(char *possibleip)
 		return -1;
 	}
 	ip=safe_malloc(16);
+	memset(ip,0,16);
 	strncpy(ip,possibleip,15);
 	for(p=config.free_ip_list;p!=NULL;p=p->next){
 		if(!strcmp(p->ip,ip))
@@ -1339,10 +1340,11 @@ int add_to_free_ip_list(char *possibleip)
 		}
 	}
 	p = safe_malloc(sizeof(t_IP));
+	memset(p,0,sizeof(t_IP));
         p->ip = safe_strdup(ip);
         p->next = config.free_ip_list;
         config.free_ip_list = p;
-        debug(LOG_INFO, "Added ip address [%s] to free ip list", ip);
+	debug(LOG_INFO, "Added ip address [%s] to free ip list", ip);
         free(ip);
         return 0;
 }
@@ -1740,7 +1742,7 @@ void
 config_validate(void)
 {
 	config_notnull(config.gw_interface, "GatewayInterface");
-    config_notnull(config.auth_server, "auth_server");
+	config_notnull(config.auth_server, "auth_server");
 	if (missing_parms) {
 		debug(LOG_ERR, "Configuration is not complete, exiting...");
 		exit(-1);
