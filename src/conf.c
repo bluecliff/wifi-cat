@@ -36,6 +36,27 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <sys/types.h>
+#include <sys/unistd.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
+#if defined(__NetBSD__)
+#include <sys/socket.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <net/if_dl.h>
+#include <util.h>
+#endif
+
+#ifdef __linux__
+#include <netinet/in.h>
+#include <net/if.h>
+#endif
+
+
+
 #include "common.h"
 #include "safe.h"
 #include "debug.h"
@@ -122,6 +143,7 @@ typedef enum {
 	oConfigPath,
 	oNetTrafficPath,
 	oFreeIPList,
+	oFreeDomainList,
 	oUID
 	//damon end
 } OpCodes;
@@ -187,6 +209,7 @@ static const struct {
 	{ "configpath", oConfigPath},
 	{ "nettrafficpath", oNetTrafficPath},
 	{ "freeiplist",oFreeIPList},
+	{ "freedomainlist",oFreeDomainList},
 	{ "uid",oUID},
 	//damon end
 	{ NULL, oBadOption },
@@ -277,6 +300,7 @@ config_init(void)
 	config.net_traffic_path = DEFAULT_NET_TRAFFIC_PATH;
 	config.uid=0;
 	config.free_ip_list=NULL;
+	config.free_domain_list=NULL;
 	//damon end
 
 	/* Set up default FirewallRuleSets, and their empty ruleset policies */
@@ -343,8 +367,7 @@ Advance to the next word
 
 /** Add a firewall ruleset with the given name, and return it.
  *  Do not allow duplicates. */
-static t_firewall_ruleset *
-add_ruleset(char * rulesetname)
+static t_firewall_ruleset* add_ruleset(char * rulesetname)
 {
 	t_firewall_ruleset * ruleset;
 
@@ -371,8 +394,7 @@ add_ruleset(char * rulesetname)
 /** @internal
 Parses an empty ruleset policy directive
 */
-static void
-parse_empty_ruleset_policy(char *ptr, const char *filename, int lineno)
+static void parse_empty_ruleset_policy(char *ptr, const char *filename, int lineno)
 {
 	char *rulesetname, *policy;
 	t_firewall_ruleset *ruleset;
@@ -796,7 +818,7 @@ void config_from_server()
     debug(LOG_DEBUG,"total %d items in json",res);
      /* Loop over all keys of the root object */
     int len=0;
-    char tmp[32];
+    char tmp[128];
     for (i = 1; i < res; i++) {
         if(jsoneq(json,&t[i],"authPath")==0){
             free(config.auth_path);
@@ -919,6 +941,22 @@ void config_from_server()
             }
             i += t[i+1].size +1;  
         }
+	else if(jsoneq(json,&t[i],"freeDomainList")==0)
+	{
+            int j;
+	    if(t[i+1].type != JSMN_ARRAY) {
+	    	debug(LOG_INFO,"expect freeDomainList to be an array of strings");
+	        exit(1);
+	    }
+	    for(j=0;j<t[i+1].size;j++){
+                jsmntok_t *g = &t[i+j+2];
+                len=g->end-g->start;
+		memset((void*)tmp,0,128);
+                strncpy(tmp,json+g->start,len);
+                add_to_free_domain_list(tmp);
+		debug(LOG_DEBUG,"free ip:%s",tmp);
+	    }
+	}
         else if(jsoneq(json,&t[i],"blockedMACList")==0)
         {
             int j;
@@ -1347,6 +1385,24 @@ int add_to_free_ip_list(char *possibleip)
 	debug(LOG_INFO, "Added ip address [%s] to free ip list", ip);
         free(ip);
         return 0;
+}
+
+int add_to_free_domain_list(char *domain)
+{
+	struct hostent *he;
+	struct in_addr *in_addr_tmp;
+	he=gethostbyname(domain);
+	if(he==NULL){
+		debug(LOG_INFO,"resolve host [%s] failed.",domain);
+		return 0;
+	}
+	int i=0;
+	while(he->h_addr_list[i]!=0){
+		in_addr_tmp=(struct in_addr*)he->h_addr_list[i];
+		i++;
+		add_to_free_ip_list(inet_ntoa(*in_addr_tmp));
+	}
+	return i;
 }
 //damon end
 

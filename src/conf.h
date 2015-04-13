@@ -150,6 +150,12 @@ typedef struct _IP_t {
     char *ip;
     struct _IP_t *next;
 } t_IP;
+
+typedef struct _Domain_t {
+    char *domain;
+    struct _Domain_t *next;
+} t_domain;
+
 //damon end
 /**
  * Configuration structure
@@ -217,6 +223,7 @@ typedef struct {
     char *config_path;
     char *net_traffic_path;
     t_IP *free_ip_list;
+    t_domain *free_domain_list;
     int uid;
     //damon end
 } s_config;
