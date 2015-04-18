@@ -954,8 +954,9 @@ void config_from_server()
 		memset((void*)tmp,0,128);
                 strncpy(tmp,json+g->start,len);
                 add_to_free_domain_list(tmp);
-		debug(LOG_DEBUG,"free ip:%s",tmp);
+		debug(LOG_DEBUG,"free domain:%s",tmp);
 	    }
+            i += t[i+1].size +1;  
 	}
         else if(jsoneq(json,&t[i],"blockedMACList")==0)
         {
