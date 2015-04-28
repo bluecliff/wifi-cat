@@ -99,6 +99,7 @@
 #define DEFAULT_AUTH_PATH "/wificat/auth/"
 #define DEFAULT_CONFIG_PATH "/wificat/config/"
 #define DEFAULT_NET_TRAFFIC_PATH "/wificat/nettraffic/"
+#define DEFAULT_TOKEN_VERIFY_PATH "/wificat/tokenverify/"
 
 //damon end
 
@@ -221,7 +222,8 @@ typedef struct {
     unsigned int auth_port;
     char *auth_path;
     char *config_path;
-    char *net_traffic_path;
+    char *net_traffic_path; 
+    char *token_verify_path;
     t_IP *free_ip_list;
     t_domain *free_domain_list;
     int uid;

@@ -146,8 +146,11 @@ int connect_auth_server(char* ip,int port) {
     return (-1);
 }
 
-//get config from auth server
-int config_request(char *ip,int port,char *path,int id,char *version,char *buf)
+
+
+//sending http get request to auth server and get response
+//int http_get_request(char *ip,int port,char *path,int id,char *version,char *buf)
+int http_get_request(char *ip,int port,char *path,char* query,char *version,char *buf)
 {
     int sockfd;
     ssize_t numbytes;
@@ -162,12 +165,13 @@ int config_request(char *ip,int port,char *path,int id,char *version,char *buf)
     }
     memset(buf, 0, MAX_BUF);
     snprintf(buf, MAX_BUF - 1,
-            "GET %s?uid=%d HTTP/1.0\r\n"
+           // "GET %s?uid=%d HTTP/1.0\r\n"
+            "GET %s%s HTTP/1.0\r\n"
             "User-Agent: WiFiCat %s\r\n"
             "Host: %s\r\n"
             "\r\n",
             path,
-            id,
+            query,
             version,
             ip);
     debug(LOG_DEBUG, "Sending HTTP request to auth server: [%s]", buf);

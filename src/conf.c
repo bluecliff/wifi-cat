@@ -142,6 +142,7 @@ typedef enum {
 	oAuthPath,
 	oConfigPath,
 	oNetTrafficPath,
+	oTokenVerifyPath,
 	oFreeIPList,
 	oFreeDomainList,
 	oUID
@@ -208,6 +209,7 @@ static const struct {
 	{ "authpath", oAuthPath},
 	{ "configpath", oConfigPath},
 	{ "nettrafficpath", oNetTrafficPath},
+	{ "tokenverifypath", oTokenVerifyPath},
 	{ "freeiplist",oFreeIPList},
 	{ "freedomainlist",oFreeDomainList},
 	{ "uid",oUID},
@@ -298,6 +300,7 @@ config_init(void)
 	config.auth_path = DEFAULT_AUTH_PATH;
 	config.config_path = DEFAULT_CONFIG_PATH;
 	config.net_traffic_path = DEFAULT_NET_TRAFFIC_PATH;
+	config.token_verify_path = DEFAULT_TOKEN_VERIFY_PATH;
 	config.uid=0;
 	config.free_ip_list=NULL;
 	config.free_domain_list=NULL;
@@ -787,7 +790,10 @@ void config_from_server()
         exit(1);
     }
     ip[15]=0;
-    res = config_request(ip,config.auth_port,config.config_path,config.uid,VERSION,buf);
+    //res = http_get_request(ip,config.auth_port,config.config_path,config.uid,VERSION,buf);
+    char query[32]={0}; 
+    snprintf(query,sizeof(query),"?uid=%d",config.uid);
+    res = http_get_request(ip,config.auth_port,config.config_path,query,VERSION,buf);
     if(res<0){
         debug(LOG_INFO,"Read config from auth server[%s] error.",config.auth_server);
         return;

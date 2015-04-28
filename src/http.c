@@ -138,7 +138,7 @@ http_callback_status(httpd *webserver, request *r)
 /** The 404 handler is one way a client can first hit nodogsplash.
  */
 void
-http_nodogsplash_callback_404(httpd *webserver, request *r)
+http_nodogsplash_callback_404(httpd *webserier, request *r)
 {
 	debug(LOG_INFO, "Capturing as 404 request from %s for [%s%s]",
 		  r->clientAddr, r->request.host, r->request.path);
@@ -201,6 +201,46 @@ http_nodogsplash_first_contact(request *r)
 
 /** The multipurpose authentication action handler
  */
+
+int token_verify(char* request_token,char* mac)
+{
+    char buf[MAX_BUF];
+    char ip[16];
+    s_config *config;
+    config = config_get_config();
+    int res=resolve_host(config->auth_server,ip);
+    if(res<0){
+        debug(LOG_INFO,"Resolve auth server[%s] error.",config->auth_server);
+  	return -1;      
+    }
+    ip[15]=0;
+    char query[64]={0}; 
+    snprintf(query,sizeof(query),"?uid=%d&token=%s&mac=%s",config->uid,request_token,mac);
+    res = http_get_request(ip,config->auth_port,config->token_verify_path,query,VERSION,buf);
+    if(res<0){
+        debug(LOG_INFO,"verify token[%s]from auth server[%s] error.",request_token,config->auth_server);
+        return -1;
+    }
+    
+    int i;
+    char* result=strstr(buf,"\r\n\r\n");
+    
+    if(result==NULL)
+    {
+        debug(LOG_INFO,"verify token[%s] from auth server[%s] return null.",request_token,config->auth_server);
+        return;
+    }
+    result=result+4;
+    debug(LOG_DEBUG,"verify token[%s] result: %s",request_token,result);
+    if(strcmp(result,"1")==0)
+    {
+       return 1;
+    }
+    else{
+       return 0;
+    }
+}
+
 void
 http_nodogsplash_callback_action(request *r,
 								 t_auth_target *authtarget,
@@ -265,17 +305,27 @@ http_nodogsplash_callback_action(request *r,
 		  action, ip, mac, clienttoken, requesttoken);
 	debug(LOG_DEBUG, "Redirect:  %s", redir);
 
-	/* Check token match */
-	if (strcmp(clienttoken,requesttoken)) {
-		/* tokens don't match, reject */
-		debug(LOG_NOTICE, "Client %s %s tokens %s, %s do not match",
-			  r->clientAddr, mac, clienttoken, requesttoken);
-		http_nodogsplash_serve_info(r, "Nodogsplash Error",
-									"Tokens do not match.");
+	// verify token
+	if(token_verify(requesttoken,mac)<=0)
+	{
+		debug(LOG_INFO,"client %s %s token verify failed",ip,mac);
+		http_nodogsplash_serve_info(r, "Nodogsplash Error","Tokens do not match.");
 		free(mac);
 		free(clienttoken);
 		return;
 	}
+	
+	/* Check token match */
+	//if (strcmp(clienttoken,requesttoken) && strcmp(clienttoken,"yiroycom")) {
+	//	/* tokens don't match, reject */
+	//	debug(LOG_NOTICE, "Client %s %s tokens %s, %s do not match",
+	//		  r->clientAddr, mac, clienttoken, requesttoken);
+	//	http_nodogsplash_serve_info(r, "Nodogsplash Error",
+	//								"Tokens do not match.");
+	//	free(mac);
+	//	free(clienttoken);
+	//	return;
+	//}
 
 	/* Log value of info string, if any */
 	if(authtarget->info) {
