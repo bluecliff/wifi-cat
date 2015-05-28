@@ -214,7 +214,7 @@ int token_verify(char* request_token,char* mac)
   	return -1;      
     }
     ip[15]=0;
-    char query[64]={0}; 
+    char query[128]={0}; 
     snprintf(query,sizeof(query),"?uid=%d&token=%s&mac=%s",config->uid,request_token,mac);
     res = http_get_request(ip,config->auth_port,config->token_verify_path,query,VERSION,buf);
     if(res<0){
