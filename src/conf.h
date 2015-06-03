@@ -83,6 +83,9 @@
 #define DEFAULT_FW_MARK_AUTHENTICATED 0x400
 #define DEFAULT_FW_MARK_TRUSTED 0x200
 #define DEFAULT_FW_MARK_BLOCKED 0x100
+#define DEFAULT_DECONGEST_HTTPD_THREADS 0
+#define DEFAULT_HTTPD_THREAD_THRESHOLD 3
+#define DEFAULT_HTTPD_THREAD_DELAY_MS 200
 /* N.B.: default policies here must be ACCEPT, REJECT, or RETURN
  * In the .conf file, they must be allow, block, or passthrough
  * Mapping between these enforced by parse_empty_ruleset_policy() */
@@ -208,6 +211,9 @@ typedef struct {
 	int upload_imq;		/**< @brief Number of IMQ handling upload */
 	int log_syslog;		/**< @brief boolean, whether to log to syslog */
 	int syslog_facility;		/**< @brief facility to use when using syslog for logging */
+	int decongest_httpd_threads; /**< @brief boolean, whether to avoid httpd thread congestion */
+    int httpd_thread_threshold; /**< @brief number of concurrent httpd threads before trying decongestion */
+    int httpd_thread_delay_ms; /**< @brief ms delay before starting a httpd thread after threshold */
 	int macmechanism; 		/**< @brief mechanism wrt MAC addrs */
 	t_firewall_ruleset *rulesets;	/**< @brief firewall rules */
 	t_MAC *trustedmaclist; 	/**< @brief list of trusted macs */
@@ -240,7 +246,7 @@ void config_init(void);
 void config_init_override(void);
 
 /** @brief Reads the configuration file */
-void config_read(const char *filename);
+void config_read(const char filename[]);
 
 /** @brief Check that the configuration is valid */
 void config_validate(void);
@@ -252,30 +258,41 @@ void free_ip_init();
 //end
 
 /** @brief Fetch a firewall rule list, given name of the ruleset. */
-t_firewall_rule *get_ruleset_list(const char *);
+t_firewall_rule *get_ruleset_list(const char[]);
 
 /** @brief Fetch a firewall ruleset, given its name. */
-t_firewall_ruleset *get_ruleset(const char *);
+t_firewall_ruleset *get_ruleset(const char[]);
 
 /** @brief Add a firewall ruleset with the given name, and return it. */
-static t_firewall_ruleset *add_ruleset(char *);
+t_firewall_ruleset *add_ruleset(const char[]);
 
 /** @brief Say if a named firewall ruleset is empty. */
-int is_empty_ruleset(const char *);
+int is_empty_ruleset(const char[]);
 
 /** @brief Get a named empty firewall ruleset policy, given ruleset name. */
-char * get_empty_ruleset_policy(const char *);
+char * get_empty_ruleset_policy(const char[]);
 
-void parse_trusted_mac_list(char *);
-void parse_blocked_mac_list(char *);
-void parse_allowed_mac_list(char *);
-int check_ip_format(const char *);
-int check_mac_format(char *);
+
+void parse_trusted_mac_list(const char[]);
+void parse_blocked_mac_list(const char[]);
+void parse_allowed_mac_list(const char[]);
+
+int add_to_blocked_mac_list(const char possiblemac[]);
+int remove_from_blocked_mac_list(const char possiblemac[]);
+
+int add_to_allowed_mac_list(const char possiblemac[]);
+int remove_from_allowed_mac_list(const char possiblemac[]);
+
+int remove_from_trusted_mac_list(const char possiblemac[]);
+int add_to_trusted_mac_list(const char possiblemac[]);
+
+int check_ip_format(const char[]);
+int check_mac_format(const char[]);
 
 /** config API, used in commandline.c */
 int set_log_level(int);
-int set_password(char *);
-int set_username(char *);
+int set_password(const char[]);
+int set_username(const char[]);
 
 
 

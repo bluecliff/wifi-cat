@@ -42,6 +42,7 @@
 #include <netinet/in.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
+#include <sys/time.h>
 
 #if defined(__NetBSD__)
 #include <sys/socket.h>
@@ -67,7 +68,7 @@
 #include "conf.h"
 #include "debug.h"
 #include "firewall.h"
-
+#include "fw_iptables.h"
 
 static pthread_mutex_t ghbn_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -81,14 +82,16 @@ extern	pthread_mutex_t	config_mutex;
 /* Defined in auth.c */
 extern unsigned int authenticated_since_start;
 
+/* Defined in gateway.c */
+extern int created_httpd_threads;
+extern int current_httpd_threads;
 
 /** Fork a child and execute a shell command.
  * The parent process waits for the child to return,
  * and returns the child's exit() value.
  * @return Return code of the command
  */
-int
-execute(char *cmd_line, int quiet)
+int execute(const char cmd_line[], int quiet)
 {
 	int status, retval;
 	pid_t pid, rc;
@@ -155,8 +158,8 @@ execute(char *cmd_line, int quiet)
 	}
 }
 
-struct in_addr *
-wd_gethostbyname(const char *name) {
+struct in_addr *wd_gethostbyname(const char name[])
+{
 	struct hostent *he;
 	struct in_addr *h_addr, *in_addr_temp;
 
@@ -182,8 +185,7 @@ wd_gethostbyname(const char *name) {
 	return h_addr;
 }
 
-char *
-get_iface_ip(const char *ifname)
+char *get_iface_ip(const char ifname[])
 {
 #if defined(__linux__)
 	struct ifreq if_data;
@@ -206,7 +208,7 @@ get_iface_ip(const char *ifname)
 		debug(LOG_ERR, "ioctl(): SIOCGIFADDR %s", strerror(errno));
 		return NULL;
 	}
-	memcpy ((void *) &ip, (void *) &if_data.ifr_addr.sa_data + 2, 4);
+	memcpy ((void *) &ip, (unsigned char *) &if_data.ifr_addr.sa_data + 2, 4);
 	in.s_addr = ip;
 
 	ip_str = inet_ntoa(in);
@@ -240,8 +242,7 @@ out:
 #endif
 }
 
-char *
-get_iface_mac(const char *ifname)
+char * get_iface_mac(const char ifname[])
 {
 #if defined(__linux__)
 	int r, s;
@@ -499,9 +500,21 @@ char * get_status_text()
 	snprintf((buffer + len), (sizeof(buffer) - len), "====\n");
 	len = strlen(buffer);
 
-	snprintf((buffer + len), (sizeof(buffer) - len), "Client authentications since start: %lu\n", authenticated_since_start);
-	len = strlen(buffer);
+	snprintf((buffer + len), (sizeof(buffer) - len), "Client authentications since start: %u\n", authenticated_since_start);
 
+	len = strlen(buffer);
+	
+
+    snprintf((buffer + len), (sizeof(buffer) - len), "Httpd request threads created/current: %d/%d\n", created_httpd_threads, current_httpd_threads);
+    len = strlen(buffer);
+    
+
+    if(config->decongest_httpd_threads) {
+        snprintf((buffer + len), (sizeof(buffer) - len), "Httpd thread decongest threshold: %d threads\n", config->httpd_thread_threshold);
+        len = strlen(buffer);
+        snprintf((buffer + len), (sizeof(buffer) - len), "Httpd thread decongest delay: %d ms\n", config->httpd_thread_delay_ms);
+        len = strlen(buffer);
+    }
 	/* Update the client's counters so info is current */
 	iptables_fw_counters_update();
 
@@ -662,13 +675,16 @@ char * get_clients_text()
 		snprintf((buffer + len), (sizeof(buffer) - len), "ip=%s\nmac=%s\n", client->ip, client->mac);
 		len = strlen(buffer);
 
-		snprintf((buffer + len), (sizeof(buffer) - len), "added=%d\n", client->added_time);
+		snprintf((buffer + len), (sizeof(buffer) - len), "added=%lld\n", (long long) client->added_time);
+
 		len = strlen(buffer);
 
-		snprintf((buffer + len), (sizeof(buffer) - len), "active=%d\n", client->counters.last_updated);
+		snprintf((buffer + len), (sizeof(buffer) - len), "active=%lld\n", (long long) client->counters.last_updated);
+
 		len = strlen(buffer);
 
-		snprintf((buffer + len), (sizeof(buffer) - len), "duration=%d\n", now - client->added_time);
+		snprintf((buffer + len), (sizeof(buffer) - len), "duration=%lu\n", now - client->added_time);
+
 		len = strlen(buffer);
 
 		snprintf((buffer + len), (sizeof(buffer) - len), "token=%s\n", client->token ? client->token : "none");
@@ -702,10 +718,7 @@ unsigned short rand16(void)
 	static int been_seeded = 0;
 
 	if (!been_seeded) {
-		int fd, n = 0;
-		unsigned int c = 0, seed = 0;
-		char sbuf[sizeof(seed)];
-		char *s;
+    	unsigned int seed = 0;
 		struct timeval now;
 
 		/* not a very good seed but what the heck, it needs to be quickly acquired */

@@ -53,7 +53,7 @@ static int tc_quiet = 0;
 
 /** @internal */
 static int
-tc_do_command(char *format, ...)
+tc_do_command(const char format[], ...)
 {
 	va_list vlist;
 	char *fmt_cmd;
@@ -78,14 +78,12 @@ tc_do_command(char *format, ...)
 }
 
 int
-tc_attach_client(char *down_dev, int download_limit, char *up_dev, int upload_limit, int idx, int fw_mark)
+tc_attach_client(const char down_dev[], int download_limit, const char up_dev[], int upload_limit, int idx, int fw_mark)
 {
 	int burst;
 	int mtu = MTU + 40;
 	int rc = 0;
-	int r2q = 10;
-
-	if(download_limit < 120) r2q = 1;
+	
 
 	burst = download_limit * 1000 / 8 / HZ; /* burst (buffer size) in bytes */
 	burst = burst < mtu ? mtu : burst; /* but burst should be at least mtu */
@@ -96,7 +94,6 @@ tc_attach_client(char *down_dev, int download_limit, char *up_dev, int upload_li
 						down_dev, idx + 10, fw_mark, idx + 10);
 
 	/* to avoid some kernel warnings with small rates */
-	if(upload_limit < 120) r2q = 1;
 
 	burst = upload_limit * 1000 / 8 / HZ; /* burst (buffer size) in bytes */
 	burst = burst < mtu ? mtu : burst; /* but burst should be at least mtu */
@@ -110,7 +107,7 @@ tc_attach_client(char *down_dev, int download_limit, char *up_dev, int upload_li
 }
 
 int
-tc_detach_client(char *down_dev, char *up_dev, int idx)
+tc_detach_client(const char down_dev[], const char up_dev[], int idx)
 {
 	int rc = 0;
 
@@ -127,7 +124,7 @@ tc_detach_client(char *down_dev, char *up_dev, int idx)
  * http://forum.openwrt.org/viewtopic.php?id=4112&p=1
  */
 static int
-tc_attach_upload_qdisc(char *dev, int upload_limit)
+tc_attach_upload_qdisc(const char dev[], int upload_limit)
 {
 	int rc = 0;
 	int burst;
@@ -152,7 +149,7 @@ tc_attach_upload_qdisc(char *dev, int upload_limit)
  * http://forum.openwrt.org/viewtopic.php?id=4112&p=1
  */
 static int
-tc_attach_download_qdisc(char *dev, int download_limit)
+tc_attach_download_qdisc(const char dev[], int download_limit)
 {
 	int rc = 0;
 	int burst;
@@ -227,6 +224,7 @@ tc_init_tc()
 
 	free(download_imqname);
 	free(upload_imqname);
+	return rc;
 }
 
 

@@ -18,6 +18,7 @@ PKG_SOURCE_URL:=git@github.com:bluecliff/wifi-cat.git
 PKG_SOURCE_VERSION:=master
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 PKG_BUILD_PARALLEL:=1
+PKG_LICENSE:=GPL-2.0+
 
 include $(INCLUDE_DIR)/package.mk
 

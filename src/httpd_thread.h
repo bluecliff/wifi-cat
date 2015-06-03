@@ -18,21 +18,19 @@
  *                                                                  *
 \********************************************************************/
 
-/* $Id: ndsctl_thread.h 901 2006-01-17 18:58:13Z mina $ */
-/** @file ndsctl_thread.h
-    @brief nodogsplash monitoring thread
+/* $Id: httpd_thread.h 901 2006-01-17 18:58:13Z mina $ */
+/** @file httpd_thread.h
+    @brief nodogsplash httpd worker thread
     @author Copyright (C) 2004 Alexandre Carmel-Veilleux <acv@acv.ca>
-    trivially modified for nodogsplash
 */
 
-#ifndef _NDSCTL_THREAD_H_
-#define _NDSCTL_THREAD_H_
+#ifndef _HTTPD_THREAD_H_
+#define _HTTPD_THREAD_H_
 
 
-#define DEFAULT_NDSCTL_SOCK	"/tmp/ndsctl.sock"
-
-/** @brief Listen for nodogsplash control messages on a unix domain socket */
-void* thread_ndsctl(void *arg);
+/** @brief Handle a web request */
+void thread_httpd(void *args);
 
 
 #endif
+

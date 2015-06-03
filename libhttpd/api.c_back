@@ -74,12 +74,16 @@ char *httpdUrlEncode(str)
 
 char *httpdRequestMethodName(request *r)
 {
+	static	char	tmpBuf[255];
+
 	switch(r->request.method)
 	{
 		case HTTP_GET: return("GET");
 		case HTTP_POST: return("POST");
 		default:
-			return("INVALID");
+			snprintf(tmpBuf,255,"Invalid method '%d'",
+				r->request.method);
+			return(tmpBuf);
 	}
 }
 
@@ -190,15 +194,14 @@ int httpdAddVariable(request *r, const char *name, const char *value)
 	return(0);
 }
 
-httpd *httpdCreate(host, port, ip6)
+httpd *httpdCreate(host, port)
 	char	*host;
 	int	port;
-	int ip6;
 {
 	httpd	*new;
 	int	sock,
 		opt;
-	struct sockaddr_storage addr;
+        struct  sockaddr_in     addr;
 
 	/*
 	** Create the handle and setup it's basic config
@@ -256,7 +259,7 @@ httpd *httpdCreate(host, port, ip6)
 	}
 #endif
 
-	sock = socket(ip6 ? AF_INET6 : AF_INET , SOCK_STREAM, 0);
+	sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock  < 0)
 	{
 		free(new);
@@ -268,19 +271,16 @@ httpd *httpdCreate(host, port, ip6)
 #	endif
 	new->serverSock = sock;
 	bzero(&addr, sizeof(addr));
-
-	if(ip6) {
-		struct sockaddr_in6 *a = (struct sockaddr_in6 *)&addr;
-		a->sin6_family = AF_INET6;
-		a->sin6_port = htons(new->port);
-		inet_pton( AF_INET6, new->host ? new->host : "::", &a->sin6_addr );
-	} else {
-		struct sockaddr_in *a = (struct sockaddr_in *)&addr;
-		a->sin_family = AF_INET;
-		a->sin_port = htons(new->port);
-		inet_pton( AF_INET, new->host ? new->host : "0.0.0.0", &a->sin_addr );
+	addr.sin_family = AF_INET;
+	if (new->host == HTTP_ANY_ADDR)
+	{
+		addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	}
-
+	else
+	{
+		addr.sin_addr.s_addr = inet_addr(new->host);
+	}
+	addr.sin_port = htons((u_short)new->port);
 	if (bind(sock,(struct sockaddr *)&addr,sizeof(addr)) <0)
 	{
 		close(sock);
@@ -328,12 +328,11 @@ request *httpdGetConnection(server, timeout)
 		}
 		if (timeout != 0 && result == 0)
 		{
-			server->lastError = 0;
 			return(NULL);
+			server->lastError = 0;
 		}
 		if (result > 0)
 		{
-			server->lastError = 0;
 			break;
 		}
 	}
@@ -378,7 +377,7 @@ request *httpdGetConnection(server, timeout)
 
 int httpdReadRequest(httpd *server, request *r)
 {
-	char	buf[HTTP_MAX_LEN];
+	static	char	buf[HTTP_MAX_LEN];
 	int	count,
 		inHeaders;
 	char	*cp, *cp2;
@@ -423,13 +422,14 @@ int httpdReadRequest(httpd *server, request *r)
 				r->request.method = HTTP_POST;
 			if (r->request.method == 0)
 			{
-				_httpd_net_write( r->clientSock,
-				      HTTP_METHOD_ERROR,
-				      strlen(HTTP_METHOD_ERROR));
-				_httpd_net_write( r->clientSock, cp,
-				      strlen(cp));
-				_httpd_writeErrorLog(server, r, LEVEL_ERROR,
-					"Invalid method received");
+//				_httpd_net_write( r->clientSock,
+//				      HTTP_METHOD_ERROR,
+//				      strlen(HTTP_METHOD_ERROR));
+//				_httpd_net_write( r->clientSock, cp,
+//				      strlen(cp));
+//				_httpd_writeErrorLog(server, r, LEVEL_ERROR,
+//					"Invalid method received");
+				printf("Invalid request method");
 				return(-1);
 			}
 			cp = cp2+1;
@@ -441,7 +441,7 @@ int httpdReadRequest(httpd *server, request *r)
 			*cp2 = 0;
 			strncpy(r->request.path,cp,HTTP_MAX_URL);
                         r->request.path[HTTP_MAX_URL-1]=0;
-			_httpd_sanitiseUrl(r->request.path);
+//			_httpd_sanitiseUrl(r->request.path);
 			continue;
 		}
 
@@ -961,7 +961,19 @@ void httpdProcessRequest(httpd *server, request *r)
 	httpContent *entry;
 
 	r->response.responseLength = 0;
-	strncpy(dirName, httpdRequestPath(r), HTTP_MAX_URL);
+	
+
+	//damon add	
+	printf("request host:%s\n",(r->request).host);
+	printf("request path:%s\n",(r->request).path);
+	char *questionmark=0;
+	if ( ( questionmark = strchr(httpdRequestPath(r), '?') ) != NULL ) {
+		strncpy( dirName, httpdRequestPath(r), questionmark - httpdRequestPath(r) );
+		dirName[questionmark - httpdRequestPath(r)] = 0;
+	}
+	else {
+		strncpy(dirName, httpdRequestPath(r), HTTP_MAX_URL);	
+	}
 	dirName[HTTP_MAX_URL-1]=0;
 	cp = strrchr(dirName, '/');
 	if (cp == NULL)

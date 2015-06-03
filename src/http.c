@@ -51,7 +51,7 @@
 
 extern pthread_mutex_t client_list_mutex;
 
-static int data_extract_bw(const char *buff, t_client *client)
+static int data_extract_bw(const char buff[], t_client *client) 
 {
 	int seconds = 0;
 	int upload = 0;
@@ -74,7 +74,7 @@ err:
 	return 0;
 }
 
-char *system_exec(char *cmd)
+char *system_exec(const char cmd[])
 {
 	char *data = NULL;
 	int error, pipes[2], stderr_fd = -1;
@@ -353,7 +353,7 @@ http_nodogsplash_callback_action(request *r,
 	return;
 }
 
-int http_isAlphaNum(const char *str)
+int http_isAlphaNum(const char str[]) 
 {
 	int i;
 
@@ -450,7 +450,7 @@ http_nodogsplash_redirect_remote_auth(request *r, t_auth_target *authtarget,t_cl
  * or redirect to remote authenticator as required.
  */
 void
-http_nodogsplash_serve_splash(request *r, t_auth_target *authtarget, t_client *client, char *error_msg)
+http_nodogsplash_serve_splash(request *r, t_auth_target *authtarget, t_client *client, const char error_msg[]) 
 {
 	char *tmpstr;
 	char line [MAX_BUF];
@@ -522,7 +522,7 @@ http_nodogsplash_serve_splash(request *r, t_auth_target *authtarget, t_client *c
 /* Pipe the info page from the info skeleton page file.
  */
 void
-http_nodogsplash_serve_info(request *r, char *title, char *content)
+http_nodogsplash_serve_info(request *r, const char title[], const char content[]) 
 {
 	char *abspath;
 	char line [MAX_BUF];
@@ -567,7 +567,7 @@ http_nodogsplash_serve_info(request *r, char *title, char *content)
 }
 
 void
-http_nodogsplash_redirect(request *r, char *url)
+http_nodogsplash_redirect(request *r, const char url[]) 
 {
 	char *header;
 	debug(LOG_DEBUG,"Redirect client %s to %s",r->clientAddr,url);
@@ -637,8 +637,8 @@ http_nodogsplash_decode_authtarget(request *r)
 /* Allocate and return a pointer to a string that is the redirect URL.
  * Caller must free.
  */
-char*
-http_nodogsplash_make_redir(char* origurl)
+const char*
+http_nodogsplash_make_redir(const char origurl[])
 {
 	s_config *config;
 	config = config_get_config();
@@ -656,7 +656,7 @@ http_nodogsplash_make_redir(char* origurl)
  * The struct should be freed by http_nodogsplash_free_authtarget().
  */
 t_auth_target*
-http_nodogsplash_make_authtarget(char* token, char* redir)
+http_nodogsplash_make_authtarget(const char token[], const char redir[])
 {
 	char *encodedredir;
 	char *encodedtok;

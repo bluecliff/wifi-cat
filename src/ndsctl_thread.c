@@ -50,7 +50,7 @@
 #include "client_list.h"
 #include "fw_iptables.h"
 #include "firewall.h"
-
+#include "gateway.h"
 #include "ndsctl_thread.h"
 
 /* Defined in clientlist.c */
@@ -77,7 +77,7 @@ static void ndsctl_username(int, char *);
 @param arg Must contain a pointer to a string containing the Unix domain socket to open
 @todo This thread loops infinitely, need a watchdog to verify that it is still running?
 */
-void
+void*
 thread_ndsctl(void *arg)
 {
 	int	sock,    fd;
@@ -147,6 +147,7 @@ thread_ndsctl(void *arg)
 			pthread_detach(tid);
 		}
 	}
+	return NULL;
 }
 
 

@@ -6,9 +6,11 @@ CFLAGS+=-Isrc -Ilibhttpd
 LDFLAGS+=-pthread
 LDLIBS=
 
+STRIP=yes
+
 NDS_OBJS=src/auth.o src/client_list.o src/commandline.o src/conf.o \
 	src/debug.o src/firewall.o src/fw_iptables.o src/gateway.o src/http.o \
-	src/httpd_handler.o src/ndsctl_thread.o src/safe.o src/tc.o src/util.o \
+	src/httpd_thread.o src/ndsctl_thread.o src/safe.o src/tc.o src/util.o \
 	src/centerserver.o src/jsmn.o
 
 LIBHTTPD_OBJS=libhttpd/api.o libhttpd/ip_acl.o \
@@ -19,7 +21,7 @@ LIBHTTPD_OBJS=libhttpd/api.o libhttpd/ip_acl.o \
 all: wificat ndsctl
 
 %.o : %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 wificat: $(NDS_OBJS) $(LIBHTTPD_OBJS)
 	$(CC) $(LDFLAGS) -o wificat $+ $(LDLIBS)
@@ -32,8 +34,10 @@ clean:
 	rm -rf dist
 
 install:
+#ifeq(yes,$(STRIP))
 	strip wificat
 	strip ndsctl
+#endif
 	mkdir -p $(DESTDIR)/usr/bin/
 	cp ndsctl $(DESTDIR)/usr/bin/
 	cp wificat $(DESTDIR)/usr/bin/
@@ -54,13 +58,10 @@ fixstyle: checkastyle
 	&& echo "\033[1;33mPrevious files have been corrected\033[00m" \
 	|| echo "\033[0;32mAll files are ok\033[00m"
 
-deb:
-	mkdir -p dist/wificat/
-	cd dist/wificat/; \
-		cp -rp ../../debian/ .; \
-		ln -s ../../Makefile;\
-		ln -s ../../src;\
-		ln -s ../../libhttpd;\
-		ln -s ../../resources;\
-		dpkg-buildpackage -b -us -uc
-	rm -rf dist/wificat
+DEBVERSION=$(shell dpkg-parsechangelog | grep ^Version |cut -f2 -d\ | sed -e 's/-[0-9]*$$//' )
+deb: clean
+	mkdir -p dist/nodogsplash-$(DEBVERSION)
+	tar --exclude dist --exclude ".git*" -cf - . | (cd dist/nodogsplash-$(DEBVERSION) && tar xf -)
+	cd dist && tar cjf nodogsplash_$(DEBVERSION).orig.tar.bz2 nodogsplash-$(DEBVERSION)
+	cd dist/nodogsplash-$(DEBVERSION) && dpkg-buildpackage -us -uc
+	rm -rf dist/nodogsplash-$(DEBVERSION)

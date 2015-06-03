@@ -32,5 +32,8 @@ tc_init_tc(void);
 int
 tc_destroy_tc(void);
 
+int tc_attach_client(const char down_dev[], int download_limit, const char up_dev[], int upload_limit, int idx, int fw_mark);
+
+int tc_detach_client(const char down_dev[], const char up_dev[], int idx);
 
 #endif /* _TC_H_ */
