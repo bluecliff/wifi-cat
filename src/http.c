@@ -34,8 +34,6 @@
 #include <unistd.h>
 #include <syslog.h>
 
-#include "httpd.h"
-
 #include "safe.h"
 #include "debug.h"
 #include "conf.h"

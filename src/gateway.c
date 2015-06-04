@@ -383,12 +383,15 @@ int main(int argc, char **argv)
 	debug(LOG_NOTICE,"Reading and validating configuration file %s", config->configfile);
 	config_read(config->configfile);
 	config_validate();
-
-
+	
 	//damon add 14/12/14
 	//read config from server
 	debug(LOG_NOTICE,"Reading config from server %s", config->auth_server);
-	config_from_server();
+	
+	while(config_from_server()<0){
+		debug(LOG_NOTICE,"Reading config from server error,will retry in 30s");
+		sleep(40);
+	}
 	free_ip_init();
 	//damon end
 

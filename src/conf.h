@@ -253,7 +253,7 @@ void config_validate(void);
 
 //damon add 2014/12/11
 //get config from server
-void config_from_server();
+int config_from_server();
 void free_ip_init();
 //end
 
