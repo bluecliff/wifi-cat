@@ -7,7 +7,7 @@ CheckProcess() {
 	fi
 
 	PROCESS_NUM=`ps | grep "$1" | grep -v "grep" | wc -l`
-	if [ $PROCESS_NUM -eq 1 ];
+	if [ $PROCESS_NUM -eq 2 ];
 	then
 		return 1
 	else
@@ -19,8 +19,10 @@ while [ 1 ] ; do
 	CheckProcess "wificat"
 	if [ $? -eq 1 ];
 	then
+		echo "ok"
 		sleep 40s
 	else
+		echo "no"
 		/etc/init.d/wificat start
 	fi
 	done
