@@ -7,7 +7,7 @@ CheckProcess() {
 	fi
 
 	PROCESS_NUM=`ps | grep "$1" | grep -v "grep" | wc -l`
-	if [ $PROCESS_NUM -eq 2 ];
+	if [ $PROCESS_NUM -eq 1 ];
 	then
 		return 1
 	else

@@ -45,7 +45,7 @@ define Package/wificat/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) files/wificat.init $(1)/etc/init.d/$(PKG_NAME)
 
-	$(INSTALL_BIN) files/wificatmonitor.sh $(1)/usr/bin/
+	$(INSTALL_BIN) files/flywifimonitor.sh $(1)/usr/bin/
 	
 	$(INSTALL_DIR) $(1)/etc/$(PKG_NAME)/htdocs/images
 	$(CP) $(PKG_BUILD_DIR)/resources/wificat.conf $(1)/etc/$(PKG_NAME)/
