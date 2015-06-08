@@ -390,7 +390,7 @@ int main(int argc, char **argv)
 	
 	while(config_from_server()<0){
 		debug(LOG_NOTICE,"Reading config from server error,will retry in 40s");
-		sleep(40);
+		sleep(15);
 	}
 	free_ip_init();
 	//damon end

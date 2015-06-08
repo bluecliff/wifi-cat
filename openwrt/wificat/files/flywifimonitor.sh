@@ -19,10 +19,8 @@ while [ 1 ] ; do
 	CheckProcess "wificat"
 	if [ $? -eq 1 ];
 	then
-		echo "ok"
-		sleep 40s
+		sleep 30s
 	else
-		echo "no"
 		/etc/init.d/wificat start
 	fi
 	done
