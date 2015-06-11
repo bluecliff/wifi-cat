@@ -389,7 +389,7 @@ int main(int argc, char **argv)
 	debug(LOG_NOTICE,"Reading config from server %s", config->auth_server);
 	
 	while(config_from_server()<0){
-		debug(LOG_NOTICE,"Reading config from server error,will retry in 40s");
+		debug(LOG_NOTICE,"Reading config from server error,will retry in 30s");
 		sleep(15);
 	}
 	free_ip_init();
