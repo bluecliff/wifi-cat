@@ -793,7 +793,7 @@ static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
 
 int config_from_server()
 {
-    char buf[MAX_BUF];
+    char buf[8192];
     char ip[16];
     int res=resolve_host(config.auth_server,ip);
     if(res<0){
@@ -804,7 +804,7 @@ int config_from_server()
     //res = http_get_request(ip,config.auth_port,config.config_path,config.uid,VERSION,buf);
     char query[32]={0}; 
     snprintf(query,sizeof(query),"?uid=%d",config.uid);
-    res = http_get_request(ip,config.auth_port,config.config_path,query,VERSION,buf);
+    res = http_get_request(ip,config.auth_port,config.config_path,query,VERSION,buf,8192);
     if(res<0){
         debug(LOG_INFO,"Read config from auth server[%s] error.",config.auth_server);
         return -2;
@@ -819,7 +819,7 @@ int config_from_server()
     json=json+4;
     debug(LOG_DEBUG,"json config: %s",json);
     jsmn_parser p;
-    jsmntok_t t[128]; /* We expect no more than 128 tokens */
+    jsmntok_t t[256]; /* We expect no more than 128 tokens */
     jsmn_init(&p);
     res = jsmn_parse(&p, json, strlen(json), t, sizeof(t)/sizeof(t[0]));
     if (res < 0) {

@@ -150,7 +150,7 @@ int connect_auth_server(char* ip,int port) {
 
 //sending http get request to auth server and get response
 //int http_get_request(char *ip,int port,char *path,int id,char *version,char *buf)
-int http_get_request(char *ip,int port,char *path,char* query,char *version,char *buf)
+int http_get_request(char *ip,int port,char *path,char* query,char *version,char *buf,int buf_len)
 {
     int sockfd;
     ssize_t numbytes;
@@ -163,8 +163,8 @@ int http_get_request(char *ip,int port,char *path,char* query,char *version,char
         /* Could not connect to auth server */
         return (-1);
     }
-    memset(buf, 0, MAX_BUF);
-    snprintf(buf, MAX_BUF - 1,
+    memset(buf, 0, buf_len);
+    snprintf(buf, buf_len - 1,
            // "GET %s?uid=%d HTTP/1.0\r\n"
             "GET %s%s HTTP/1.0\r\n"
             "User-Agent: WiFiCat %s\r\n"
@@ -190,7 +190,7 @@ int http_get_request(char *ip,int port,char *path,char* query,char *version,char
         if (nfds > 0) {
             /** We don't have to use FD_ISSET() because there
              *  was only one fd. */
-            numbytes = read(sockfd, buf + totalbytes, MAX_BUF - (totalbytes + 1));
+            numbytes = read(sockfd, buf + totalbytes, buf_len - (totalbytes + 1));
             if (numbytes < 0) {
                 debug(LOG_ERR, "An error occurred while reading from auth server: %s", strerror(errno));
                 close(sockfd);

@@ -214,7 +214,7 @@ int token_verify(char* request_token,char* mac)
     ip[15]=0;
     char query[128]={0}; 
     snprintf(query,sizeof(query),"?uid=%d&token=%s&mac=%s",config->uid,request_token,mac);
-    res = http_get_request(ip,config->auth_port,config->token_verify_path,query,VERSION,buf);
+    res = http_get_request(ip,config->auth_port,config->token_verify_path,query,VERSION,buf,MAX_BUF);
     if(res<0){
         debug(LOG_INFO,"verify token[%s]from auth server[%s] error.",request_token,config->auth_server);
         return -1;
